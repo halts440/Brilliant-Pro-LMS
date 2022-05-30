@@ -68,6 +68,15 @@ app.route("/register").post( (req, res, next) => {
   });
 });
 
+app.route('/api/learners').get( (req, res) => {
+  Learner.find({}, (err, data) => {
+    if(err)
+      return res.json({})
+    else
+      return res.json(data)
+  })
+})
+
 app.route("/login").post( (req, res, next) => {
   const userLoggingIn = req.body;
   

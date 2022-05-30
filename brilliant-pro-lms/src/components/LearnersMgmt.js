@@ -2,7 +2,6 @@ import AdminNavigation from './AdminNavigation';
 import LearnersList from './LearnersList';
 
 function LearnersMgmt() {
-
     return (
         <div>
             <AdminNavigation />
