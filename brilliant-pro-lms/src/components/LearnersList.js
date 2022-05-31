@@ -4,19 +4,43 @@ import { PencilSquare, Trash } from 'react-bootstrap-icons';
 function LearnersList(props) {
     const [allLearners, setAllLearners] = useState([]);
 
-    useEffect( () => {
+    function getAllLearnersData() {
         fetch('http://localhost:4000/api/learners', {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json' },
             })
             .then(response => response.json() )
-            .then(data => setAllLearners(data))
+            .then(data => {
+                setAllLearners(data)
+                console.log( "data from server", data)
+            })
             .catch( (err) => {
                 console.log("An error occured", err);
                 setAllLearners([])
-        })
+            })
+    }
+
+    useEffect( () => {
+        getAllLearnersData()
     }, [])
+
+    function deleteLearner(user_id) {
+        fetch('http://localhost:4000/api/learners/delete/'+user_id, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json' },
+            })
+            .then(response => response.json() )
+            .then(data => {
+                if(data.status === 'success') {
+                    getAllLearnersData()
+                }
+            })
+            .catch( (err) => {
+                console.log("An error occured", err);
+            })
+    }
 
     return (
         <div>
@@ -40,7 +64,7 @@ function LearnersList(props) {
                                 <td>{elem.name}</td>
                                 <td>{elem.email}</td>
                                 <td><PencilSquare color='green' size={25} /></td>
-                                <td><Trash color='red' size={25} /></td>
+                                <td><Trash color='red' size={25} onClick={() => deleteLearner(elem._id) } /></td>
                             </tr>
                         ) )}
                     </tbody>

@@ -46,7 +46,10 @@ app.route("/register").post( (req, res, next) => {
 
   Learner.findOne({email: userData.email}, (err, data) => {
     if(data) {
-      res.json({message: "Email has already been taken"});
+      return res.json({
+        status: "fail",
+        message: "Email has already been taken"
+      });
     }
     else {
       bcrypt.hash(userData.password, 10).then( (data) => {
@@ -60,9 +63,18 @@ app.route("/register").post( (req, res, next) => {
             password: userData.password,
             image: userData.image
           });
-          newLearner.save();
-          console.log("New user added");
-          return res.json({message: "Success"});
+          newLearner.save((err, data) => {
+            if(err)
+              return res.json({
+                status: "fail",
+                message: "Failed to save new learner"
+              })
+            else
+              return res.json({
+                status: "success",
+                message: "New learner added"
+              })
+          });
       });
     }
   });
@@ -316,6 +328,20 @@ app.route('/checkUser').post( verifyJWT, (req, res, next) => {
   });
 });
 
+app.route('/api/learners/delete/:id').delete( (req, res) => {
+  Learner.findOneAndDelete({_id: req.params.id}, (err, data)=> {
+    if(err) 
+      return res.json({
+        status: 'fail',
+        message: 'Issue occured while deleting'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Deleted learner'
+      })
+  })
+});
 
 
 // starting server and listen to requets on port

@@ -14,6 +14,7 @@ import Materials from './components/Materials';
 import Assessments from './components/Assessments';
 
 import React from 'react';
+import AddLearner from './components/AddLearner';
 
 function Tommy(props) {
   return (
@@ -57,6 +58,7 @@ root.render(
         <Route path='materials' element={<Materials/>} />
         <Route path='assessments' element={<Assessments/>} />
         <Route path='learners' element={<LearnersMgmt/>} />
+        <Route path='/admin/learners/add' element={<AddLearner/>} />
       </Route>
 
     </Routes>
