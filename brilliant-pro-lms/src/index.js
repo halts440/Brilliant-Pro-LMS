@@ -1,4 +1,8 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
+import 'jquery/dist/jquery.min.js'
+import 'bootstrap/dist/js/bootstrap.min.js';
+import '@popperjs/core/dist/umd/popper.js';
+import './index.css'
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Link} from 'react-router-dom';
 import SignUp from './components/SignUp';
@@ -15,6 +19,8 @@ import Assessments from './components/Assessments';
 
 import React from 'react';
 import AddLearner from './components/AddLearner';
+import AddAssessment from './components/AddAssessment';
+import AddCourse from './components/AddCourse';
 
 function Tommy(props) {
   return (
@@ -59,6 +65,8 @@ root.render(
         <Route path='assessments' element={<Assessments/>} />
         <Route path='learners' element={<LearnersMgmt/>} />
         <Route path='/admin/learners/add' element={<AddLearner/>} />
+        <Route path='/admin/assessments/add' element={<AddAssessment/>} />
+        <Route path='/admin/courses/add' element={<AddCourse/>} />
       </Route>
 
     </Routes>

@@ -11,3 +11,20 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.materials-container {
+  margin: 0 auto;
+  background-color: #f7f6f6;
+  width: 90%;
+  border-radius: 5px;
+}
+
+.cheader {
+  font-weight:lighter;
+  text-align: center;
+  margin: 50px auto
+}
+
+.mat-item:hover {
+  cursor: pointer;
+}

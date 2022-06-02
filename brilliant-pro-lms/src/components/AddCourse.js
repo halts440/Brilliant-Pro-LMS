@@ -1,40 +1,45 @@
-import React from 'react';
+import { useState } from "react";
+import AdminNavigation from "./AdminNavigation";
 
-class AddCourse extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            code: '',
-            name: '',
-            overview: '',
-            image: '',
-            startDate: '',
-            endDate: '',
-            enrollmentLink: '',
-        }
 
-        this.handleSubmit = this.handleSubmit.bind(this);
-        this.handleChange = this.handleChange.bind(this);
-    }
+function AddCourse(props) {
+    const [code, setCode] = useState('')
+    const [courseName, setCourseName] = useState('')
+    const [overview, setOverview] = useState('')
+    const [image, setImage] = useState('')
+    const [startDate, setStartDate] = useState('')
+    const [endDate, setEndDate] = useState('')
+    const [enrollmentLink, setEnrollmentLink] = useState('')
 
-    handleChange(event) {
+    function handleChange(event) {
         const value = event.target.value;
         const name = event.target.name;
-        this.setState({
-            [name]: value
-        });
+        if( name === 'code')
+            setCode(value)
+        else if( name === 'courseName')
+            setCourseName(value)
+        else if( name === 'overview')
+            setOverview(value)
+        else if( name === 'image')
+            setImage(value)
+        else if( name === 'startDate')
+            setStartDate(value)
+        else if( name === 'endDate')
+            setEndDate(value)
+        else if( name === 'enrollmentLink')
+            setEnrollmentLink(value)
     }
 
-    handleSubmit(event) {
+    function handleSubmit(event) {
         event.preventDefault();
         const data = {
-            'code': this.state.code,
-            'name': this.state.name,
-            'overview' : this.state.overview,
-            'image': this.state.image,
-            'startDate': this.state.startDate,
-            'endDate': this.state.endDate,
-            'enrollmentLink' : this.state.enrollmentLink,
+            'code': code,
+            'name': courseName,
+            'overview' : overview,
+            'image': image,
+            'startDate': startDate,
+            'endDate': endDate,
+            'enrollmentLink' : enrollmentLink,
         }
         fetch('http://localhost:4000/courses/create', {
             method: 'POST',
@@ -49,38 +54,38 @@ class AddCourse extends React.Component {
             });
     }
 
-    render() {
-        return (
-            <div>
-                <h1>Add Course</h1>
-                <form onSubmit={this.handleSubmit}>
 
-                    <label>Code</label><br/>
-                    <input type='text' name='code' value={this.state.code} onChange={this.handleChange}/><br/>
+    return (
+        <div>
+            <AdminNavigation />
+            <h1>Add Course</h1>
+            <form onSubmit={handleSubmit}>
 
-                    <label>Name</label><br/>
-                    <input type='text' name='name' value={this.state.name} onChange={this.handleChange}/><br/>
-                    
-                    <label>Overview</label><br/>
-                    <textarea name='overview' value={this.state.overview} onChange={this.handleChange}/><br/>
+                <label>Code</label><br/>
+                <input type='text' name='code' value={code} onChange={handleChange}/><br/>
 
-                    <label>Image</label><br/>
-                    <img src={this.state.image} alt='ProfilePicture' /><br/>
+                <label>Name</label><br/>
+                <input type='text' name='name' value={courseName} onChange={handleChange}/><br/>
+                
+                <label>Overview</label><br/>
+                <textarea name='overview' value={overview} onChange={handleChange}/><br/>
 
-                    <label>Start Date</label><br/>
-                    <input type='date' name='startDate' value={this.state.startDate} onChange={this.handleChange}/><br/>
-                    
-                    <label>End Date</label><br/>
-                    <input type='date' name='endDate' value={this.state.endDate} onChange={this.handleChange}/><br/>
+                <label>Image</label><br/>
+                <img src={image} alt='ProfilePicture' /><br/>
 
-                    <label>Enrollment Link</label><br/>
-                    <input type='text' name='enrollmentLink' value={this.state.enrollmentLink} onChange={this.handleChange}/><br/>
-                    
-                    <input type='submit' value='Sign Up'></input><br></br>
-                </form>
-            </div>
-        );
-    }
+                <label>Start Date</label><br/>
+                <input type='date' name='startDate' value={startDate} onChange={handleChange}/><br/>
+                
+                <label>End Date</label><br/>
+                <input type='date' name='endDate' value={endDate} onChange={handleChange}/><br/>
+
+                <label>Enrollment Link</label><br/>
+                <input type='text' name='enrollmentLink' value={enrollmentLink} onChange={handleChange}/><br/>
+                
+                <input type='submit' value='Sign Up'></input><br></br>
+            </form>
+        </div>
+    );
 };
 
 export default AddCourse;

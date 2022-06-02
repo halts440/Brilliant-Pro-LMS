@@ -11,7 +11,7 @@ function LearnersMgmt() {
         <div>
             <AdminNavigation />
             <div>
-                <h1>Manage Learners</h1>
+                <h1 className='cheader'>Manage Learners</h1>
                 <button onClick={navigateToAddLearner}  className='btn btn-primary'> Add </button>
                 <LearnersList />
             </div>

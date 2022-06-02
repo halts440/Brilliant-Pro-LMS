@@ -10,6 +10,12 @@ require("dotenv").config();
 const Learner = require("./models/learner");
 const Course = require("./models/course");
 const Admin = require("./models/admin");
+const Assessment = require('./models/assessment')
+const FolderFolder = require('./models/folderFolder')
+const FolderFile = require('./models/folderFile')
+const fs = require('fs')
+const os = require('os')
+const fileUpload = require('express-fileupload')
 
 // connecting to mongodb
 mongoose
@@ -26,13 +32,15 @@ mongoose
 
 // setting up express app
 const app = express();
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '50mb' }));
 app.use(
   bodyParser.urlencoded({
     extended: false,
   }),
 );
 app.use(cors());
+app.use(express.static('public'))
+app.use(fileUpload());
 //app.use(express.static(path.join(__dirname, 'dist/mean-stack-crud-app')))
 //app.use('/', express.static(path.join(__dirname, 'dist/mean-stack-crud-app')))
 //app.use('/api', employeeRoute)
@@ -343,6 +351,82 @@ app.route('/api/learners/delete/:id').delete( (req, res) => {
   })
 });
 
+app.route('/api/assessments/add').post( (req, res) => {
+  const assessment = new Assessment(req.body)
+  assessment.save( (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to add assessment'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Assessment added'
+      })
+  })
+})
+
+app.route('/api/assessments').get( (req, res) => {
+  Assessment.find({}, (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to get assessments'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Got the assessments',
+        'assessments': data
+      })
+  })
+})
+
+app.route('/api/materials/d/').post( (req, res) => {
+  var dirname = './public/' + req.body.dirname
+  console.log(dirname)
+  var data = []
+  var status = 'success'
+  try {
+    fs.readdirSync(dirname).forEach(file => {
+      data.push(file)
+    });
+  }
+  catch {
+    status = 'fail'
+  }
+  return res.json({
+    'status': status,
+    'nameList': data,
+    'path': req.body.dirname
+  })
+})
+
+
+app.route('/api/materials/upload').post( (req, res) => {
+  try {
+      if(!req.files) {
+          return res.json({
+              status: 'fail',
+              message: 'No files were uploaded'
+          });
+      }
+      else {
+        let myfile = req.files.myfile;
+        myfile.mv( './public/' + req.body.dirname + '/' + myfile.name, myfile.name)
+        return res.send({
+            status: 'success',
+            message: 'File is uploaded on server',
+        });
+      }
+  } catch (err) {
+    return res.json({
+      status: 'fail',
+      message: 'Some error occured while uploading'
+    })
+  }
+})
 
 // starting server and listen to requets on port
 const port = process.env.PORT || 4000
