@@ -34,7 +34,7 @@ function SignIn (props){
                 if(data.status === 'success') {
                     localStorage.setItem('token', data.token);
                     if(data.role === 'learner')
-                        navigate('/learner', {replace:true} )
+                        navigate('/learner/'+data.id, {replace:true} )
                     else if(data.role === 'admin')
                         navigate('/admin', {replace:true} )
                 }

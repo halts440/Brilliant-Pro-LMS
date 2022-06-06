@@ -26,7 +26,8 @@ function AddLearner(props) {
             'name': uName,
             'email': email,
             'password' : password,
-            'image': image
+            'image': image,
+            'courses': []
         }
         fetch('http://localhost:4000/register', {
             method: 'POST',

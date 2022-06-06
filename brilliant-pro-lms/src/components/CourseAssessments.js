@@ -43,9 +43,55 @@ function CourseAssessments(props) {
         getAssessmentsData()
     }, [])
 
+    function addCourseAssessment(courseId, assessmentId) {
+        console.log("C: ", courseId)
+        fetch('http://localhost:4000/api/courses/addCourseAssessment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                assessment: assessmentId,
+                course: courseId
+            })
+            })
+            .then(response => response.json() )
+            .then(data => {
+                console.log(data)
+                if(data.status === 'success') {
+                    getAssessmentsData() 
+                }
+            })
+            .catch( (err) => {
+                console.log("An error occured", err);
+            })
+    }
+
+    function removeCourseAssessment(courseId, assessmentId) {
+        fetch('http://localhost:4000/api/courses/removeCourseAssessment', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                assessment: assessmentId,
+                course: courseId
+            })
+            })
+            .then(response => response.json() )
+            .then(data => {
+                console.log(data)
+                if(data.status === 'success') {
+                    getAssessmentsData()
+                }
+            })
+            .catch( (err) => {
+                console.log("An error occured", err);
+            })
+    }
+
     return (
         <div>
-            <p>{addedAssessments.includes('abc')}</p>
+            <p>{props.id}</p>
+            <p>ERRR: {addedAssessments.includes('abc')}</p>
             {
                 assessmentsList && assessmentsList.length > 0 && (
                     <table>
@@ -55,14 +101,14 @@ function CourseAssessments(props) {
                                 <td>{elem.assessmentName}</td>
                                 <td>
                                     { addedAssessments.includes(elem._id) && 
-                                        (<button className="btn btn-danger">Remove</button>)
+                                        (<button className="btn btn-danger" onClick={
+                                            () => removeCourseAssessment(props.id, elem._id)
+                                        }>Remove</button>)
                                     }
                                     {!addedAssessments.includes(elem._id) && 
                                         (<button className="btn btn-primary"
                                         onClick={
-                                            () => {
-                                                //enrollLearner(props.id, elem._id)
-                                            }
+                                            () => addCourseAssessment(props.id, elem._id)
                                         }
                                         >Add</button>)
                                     }

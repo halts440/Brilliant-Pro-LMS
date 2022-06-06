@@ -13,8 +13,12 @@ function Courses() {
             <AdminNavigation />
             <div>
                 <h1 className='cheader'>Courses</h1>
-                <button onClick={navigateToAddCourse}  className='btn btn-primary'> Add </button>
-                <CoursesList />
+                <div className='w-75 my-centered-div'>
+                    <div className='d-flex justifty-content-right'>
+                        <button onClick={navigateToAddCourse}  className='btn btn-primary'> Add </button>
+                    </div>
+                    <CoursesList />
+                </div>
             </div>
         </div>
     );

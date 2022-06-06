@@ -28,3 +28,11 @@ code {
 .mat-item:hover {
   cursor: pointer;
 }
+
+.my-centered-div {
+  margin: 0 auto;
+}
+
+th {
+  font-weight: normal;
+}

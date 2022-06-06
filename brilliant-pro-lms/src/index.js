@@ -20,6 +20,7 @@ import AddAssessment from './components/AddAssessment';
 import AddCourse from './components/AddCourse';
 import ViewAssessment from './components/ViewAssessment';
 import ViewCourse from './components/ViewCourse';
+import LearnerViewCourse from './components/LearnerViewCourse';
 
 function Tommy(props) {
   return (
@@ -53,10 +54,12 @@ root.render(
         </ProtectedRoute>
       } />
 
-      {/* <Route path='/admin' element= { <ProtectedRoute role='admin'>
-          <AdminHome/> </ProtectedRoute>
-      } /> */}
 
+      <Route path='/learner' element={<ProtectedRoute role='learner'/>} >
+        <Route path='/learner/:id' element={<LearnerHome/>} />
+        <Route path='/learner/:user_id/:course_id' element={<LearnerViewCourse/>} />
+      </Route>
+      
       <Route path='/admin' element={<ProtectedRoute role='admin'/>} >
         <Route path='/admin' element={<AdminHome/>} />
         <Route path='courses' element={<Courses/>} />
@@ -67,7 +70,7 @@ root.render(
         <Route exact path='/admin/assessments/add' element={<AddAssessment/>} />
         <Route path='/admin/assessments/:id' element={<ViewAssessment/>} />
         <Route path='/admin/courses/add' element={<AddCourse/>} />
-        <Route path='/admin/courses/:id' element={<ViewCourse/>} />s
+        <Route path='/admin/courses/:id' element={<ViewCourse/>} />
       </Route>
 
     </Routes>

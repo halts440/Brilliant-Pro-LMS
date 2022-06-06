@@ -90,8 +90,6 @@ function CourseEnrolledUsers(props) {
 
     return (
         <div>
-            <p>{learnersList.toString()}</p>
-            <p>{enrolledLearners.includes('abc')}</p>
             {
                 learnersList && learnersList.length > 0 && (
                     <table>

@@ -12,7 +12,9 @@ function Assessments() {
             <AdminNavigation />
             <div>
                 <h1 className='cheader'>Assessments</h1>
-                <button onClick={navigateToAddLearner}  className='btn btn-primary'> Add </button>
+                <div className='w-50 my-centered-div d-flex justify-content-end'>
+                    <button onClick={navigateToAddLearner}  className='btn btn-primary'> Add </button>
+                </div>
                 <AssessmentList />
             </div>
         </div>

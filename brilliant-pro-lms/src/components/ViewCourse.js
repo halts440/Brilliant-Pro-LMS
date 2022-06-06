@@ -12,6 +12,7 @@ function ViewCourse() {
     const navigate = useNavigate()
     const [learnersList, setLearnersList] = useState([])
     const [enrolledLearners, setEnrolledLearners] = useState([])
+    const [courseName, setCourseName] = useState('')
 
     useEffect( () => {
         fetch('http://localhost:4000/api/courses/'+myparam.id, {
@@ -24,6 +25,7 @@ function ViewCourse() {
                 console.log(data)
                 if(data.status === 'success') {
                     setEnrolledLearners(data.course.learnersList)
+                    setCourseName(data.course.courseName)
                 }
             })
             .catch( (err) => {
@@ -35,23 +37,25 @@ function ViewCourse() {
     return (
         <div>
             <AdminNavigation />
-
-            <Tabs defaultActiveKey="matandas" id="uncontrolled-tab-example" className="mb-3">
-                <Tab eventKey="matandas" title="Materials and Assessments">
-                    <div>
-                        <h3>Materials</h3>
-                        <CourseMaterials />
-                        <h3>Assessments</h3>
-                        <CourseAssessments />
-                    </div>
-                </Tab>
-                <Tab eventKey="setting" title="Setting">
-                    <UpdateCourseSettings id={myparam.id} />
-                </Tab>
-                <Tab eventKey="users" title="Users">
-                    <CourseEnrolledUsers id={myparam.id}/>
-                </Tab>
-            </Tabs>
+            <div className="w-50 my-centered-div">
+                <h3>{courseName}</h3>
+                <Tabs defaultActiveKey="matandas" id="uncontrolled-tab-example" className="mb-3">
+                    <Tab eventKey="matandas" title="Materials and Assessments">
+                        <div>
+                            <h3>Materials</h3>
+                            <CourseMaterials  id={myparam.id} />
+                            <h3>Assessments</h3>
+                            <CourseAssessments  id={myparam.id} />
+                        </div>
+                    </Tab>
+                    <Tab eventKey="settings" title="Settings">
+                        <UpdateCourseSettings id={myparam.id} />
+                    </Tab>
+                    <Tab eventKey="users" title="Users">
+                        <CourseEnrolledUsers id={myparam.id}/>
+                    </Tab>
+                </Tabs>
+            </div>
         </div>
     )
 }

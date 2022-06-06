@@ -1,28 +1,27 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const learnerSchema = Schema({
-    name: {
+const learnerProgressSchema = Schema({
+    userId: {
         type: String,
         required: true
     },
-    email: {
+    courseId: {
         type: String,
         required: true
     },
-    password: {
+    status: {
         type: String,
         required: true
     },
-    image: {
-        type: String,
-        required: true
+    materials: {
+        type: []
     },
-    courses: {
-        type: Array
+    assessments: {
+        type: []
     }
 }, {
     timestamps: true
 });
 
-module.exports = mongoose.model("Learner", learnerSchema);
+module.exports = mongoose.model("LearnerProgress", learnerProgressSchema);

@@ -12,6 +12,8 @@ const Course = require("./models/course");
 const Admin = require("./models/admin");
 const Material = require("./models/material");
 const Assessment = require('./models/assessment')
+const Certificate = require('./models/certificate')
+const LearnerProress = require('./models/learnerprogress')
 const fs = require('fs')
 const os = require('os')
 const fileUpload = require('express-fileupload');
@@ -103,6 +105,24 @@ app.route('/api/learners').get( (req, res) => {
   })
 })
 
+app.route('/api/certificates/:userid').get( (req, res) => {
+  Certificate.find({userId: req.params.userid}, (err, data) => {
+    if(err) {
+      return res.json({
+        status: 'fail',
+        message: 'Some issue occurred while getting certificates information'
+      })
+    }
+    else {
+      return res.json({
+        status: 'success',
+        message: 'Got all the certificates data',
+        certificates: data
+      })
+    }
+  })
+})
+
 app.route("/login").post( (req, res, next) => {
   const userLoggingIn = req.body;
   
@@ -133,7 +153,8 @@ app.route("/login").post( (req, res, next) => {
                   status: 'success',
                   message: 'User logged in successfully',
                   token: 'Bearer '+ token,
-                  role: 'learner'
+                  role: 'learner',
+                  id: dbUser.id
                 })
               }
             }
@@ -357,6 +378,22 @@ app.route('/api/learners/delete/:id').delete( (req, res) => {
   })
 });
 
+app.route('/api/learners/:id').get( (req, res) => {
+  Learner.findById({_id: req.params.id}, (err, data)=> {
+    if(err) 
+      return res.json({
+        status: 'fail',
+        message: 'Issue occured while getting user data'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Got all learner data',
+        learner: data
+      })
+  })
+});
+
 app.route('/api/courses/add').post( (req, res) => {
   const course = new Course(req.body)
   course.save( (err, data) => {
@@ -498,9 +535,60 @@ app.route('/api/courses/:id').get( (req, res) => {
   })
 })
 
+function addLearnerProgress(courseId, userId) {
+  LearnerProress.create({
+    'userId': userId,
+    'courseId': courseId,
+    'status': 'unfinished',
+    'materials': [],
+    'assessments': []
+  }, (err, data) => {
+    if(err)
+      return 0
+    else
+      return 1
+  })
+}
+
+function removeLearnerProgress(courseId, userId) {
+  LearnerProress.findOneAndRemove({
+    'userId': userId,
+    'courseId': courseId
+  }, (err, data) => {
+    if(err)
+      return 0
+    else
+      return 1
+  })
+}
+
+function addCourseToLearner(courseId, userId) {
+  Learner.findById(userId, (err, data)=> {
+    if(err) {
+      return 0
+    }
+    else {
+      // add course to learner's course list
+      var myCourseList = data.courses;
+      myCourseList.push(courseId)
+      Learner.findByIdAndUpdate(userId, {
+        'courses': myCourseList
+      }, (err, data) => {
+        if(err) 
+          return 0
+        else 
+          return 1
+      })
+    }
+  })
+}
+
 app.route('/api/courses/enroll').post( (req, res) => {
+  
   const courseId = req.body.course
   const userId = req.body.learner
+  
+  // find out the details of course in order to get learner's list
   Course.findById(courseId, (err, data) => {
     if(err) {
       return res.json({
@@ -509,6 +597,7 @@ app.route('/api/courses/enroll').post( (req, res) => {
       })
     }
     else {
+      // add user to course's learner list
       const myUserList = data.learnersList
       myUserList.push(userId)
       Course.findByIdAndUpdate(courseId, {
@@ -518,19 +607,48 @@ app.route('/api/courses/enroll').post( (req, res) => {
         if(err) {
           return res.json({
             status: 'fail',
-            message: 'Some issue occured while enrolling student'
+            message: 'Some issue occured while enrolling student at course learners list'
           })
-        } 
+        }
         else {
-          return res.json({
-            status: 'success',
-            message: 'Successfully enrolled the student'
-          })
+          if( addCourseToLearner(courseId, userId) ) {
+            return res.json({
+              status: 'fail',
+              message: 'Some issue occured while enrolling student at course learners list'
+            })
+          } 
+          else {
+            addLearnerProgress(courseId, userId)
+            return res.json({
+              status: 'success',
+              message: 'Student enrolled'
+            })
+          }
         }
       })
     }
   })
 })
+
+function removeCourseFromLearner(courseId, userId) {
+  Learner.findById(userId, (err, data) => {
+    if(err) {
+      return 0
+    }
+    else {
+      var coursesList = data.courses
+      coursesList.splice( coursesList.indexOf(courseId), 1)
+      Learner.findByIdAndUpdate(userId, {
+        courses: coursesList
+      }, (err, data) => {
+        if(err)
+          return 0
+        else
+          return 1
+      })
+    }
+  })
+}
 
 app.route('/api/courses/unenroll').post( (req, res) => {
   const courseId = req.body.course
@@ -556,10 +674,19 @@ app.route('/api/courses/unenroll').post( (req, res) => {
           })
         } 
         else {
-          return res.json({
-            status: 'success',
-            message: 'Successfully unenrolled the student'
-          })
+          if( removeCourseFromLearner(courseId, userId) ){
+            return res.json({
+              status: 'fail',
+              message: 'Some issue occured while unenrolling student'
+            })
+          }
+          else{
+            removeLearnerProgress(courseId, userId)
+            return res.json({
+              status: 'success',
+              message: 'Student unenrolled from course'
+            })
+          }
         }
       })
     }
@@ -577,8 +704,11 @@ app.route('/api/courses/addCourseAssessment').post( (req, res) => {
       })
     }
     else {
+      console.log("HE: ", data)
+      console.log("Old: ", data.assessmentList)
       const myAssessmentList = data.assessmentsList
       myAssessmentList.push(assessmentId)
+      console.log("New: ", myAssessmentList)
       Course.findByIdAndUpdate(courseId, {
         'assessmentsList': myAssessmentList
       },
@@ -611,10 +741,10 @@ app.route('/api/courses/removeCourseAssessment').post( (req, res) => {
       })
     }
     else {
-      const myAssessmentList = data.assessmentsList
-      myAssessmentList.splice( myAssessmentList.indexOf(assessmentId, 1 ) )
+      const myAssessmentsList = data.assessmentsList
+      myAssessmentsList.splice( myAssessmentsList.indexOf(assessmentId, 1 ) )
       Course.findByIdAndUpdate(courseId, {
-        'assessmentList': myAssessmentList
+        'assessmentsList': myAssessmentsList
       },
       (err, data) => {
         if(err) {
@@ -627,6 +757,76 @@ app.route('/api/courses/removeCourseAssessment').post( (req, res) => {
           return res.json({
             status: 'success',
             message: 'Successfully removed assessment item from course'
+          })
+        }
+      })
+    }
+  })
+})
+
+// materials
+app.route('/api/courses/addCourseMaterial').post( (req, res) => {
+  const courseId = req.body.course
+  const materialId = req.body.material
+  Course.findById(courseId, (err, data) => {
+    if(err) {
+      return res.json({
+        status: 'fail',
+        message: 'failed to get course related information'
+      })
+    }
+    else {
+      const myMaterialsList = data.materialsList
+      myMaterialsList.push(materialId)
+      Course.findByIdAndUpdate(courseId, {
+        'materialsList': myMaterialsList
+      },
+      (err, data) => {
+        if(err) {
+          return res.json({
+            status: 'fail',
+            message: 'Some issue occured while adding material to course'
+          })
+        } 
+        else {
+          return res.json({
+            status: 'success',
+            message: 'Successfully added material item to course'
+          })
+        }
+      })
+    }
+  })
+})
+
+app.route('/api/courses/removeCourseMaterial').post( (req, res) => {
+  const courseId = req.body.course
+  const materialId = req.body.material
+  console.log("I ma hete")
+  Course.findById(courseId, (err, data) => {
+    if(err) {
+      return res.json({
+        status: 'fail',
+        message: 'failed to get course related information'
+      })
+    }
+    else {
+      const myMaterialsList = data.materialsList
+      myMaterialsList.splice( myMaterialsList.indexOf(materialId, 1 ) )
+      Course.findByIdAndUpdate(courseId, {
+        'materialsList': myMaterialsList
+      },
+      (err, data) => {
+        if(err) {
+          return res.json({
+            status: 'fail',
+            message: 'Some issue occured while removing material item from course'
+          })
+        } 
+        else {
+          return res.json({
+            status: 'success',
+            message: 'Successfully removed material item from course'
           })
         }
       })
@@ -748,7 +948,7 @@ app.route('/api/materials/delete').delete( (req, res) => {
     console.log("Folder Name: ", dirname)
     console.log("File Name: ", fname)
     // find the file in materials collection
-    Material.findOne({'filename': fname, 'path': dirname}, (err, data) => {
+    Material.findOneAndRemove({'filename': fname, 'path': dirname}, (err, data) => {
       if(err) {
         return res.json({
           status: 'fail',
@@ -756,7 +956,6 @@ app.route('/api/materials/delete').delete( (req, res) => {
         })
       }
       else {
-        // remove from courses
         // remove from actual directory
         try{
           fs.unlinkSync('./public/'+fpath)

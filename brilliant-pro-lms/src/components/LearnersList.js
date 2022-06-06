@@ -12,7 +12,7 @@ function LearnersList(props) {
             })
             .then(response => response.json() )
             .then(data => {
-                setAllLearners(data)
+                setAllLearners(data.learners)
                 console.log( "data from server", data)
             })
             .catch( (err) => {
@@ -60,7 +60,7 @@ function LearnersList(props) {
                         {allLearners.map( (elem, index) => (
                             <tr key={index}>
                                 <th scope="row">{index}</th>
-                                <th><img className='rounded-circle img-fluid' src=''></img></th>
+                                <th><img className='rounded-circle img-fluid' src='' /></th>
                                 <td>{elem.name}</td>
                                 <td>{elem.email}</td>
                                 <td><PencilSquare color='green' size={25} /></td>

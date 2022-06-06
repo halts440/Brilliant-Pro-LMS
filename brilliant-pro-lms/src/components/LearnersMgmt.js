@@ -12,10 +12,11 @@ function LearnersMgmt() {
             <AdminNavigation />
             <div>
                 <h1 className='cheader'>Manage Learners</h1>
-                <button onClick={navigateToAddLearner}  className='btn btn-primary'> Add </button>
+                <div className='w-50 my-centered-div d-flex justify-content-end'>
+                    <button onClick={navigateToAddLearner}  className='btn btn-primary'> Add </button>
+                </div>
                 <LearnersList />
             </div>
-            
         </div>
     );
 

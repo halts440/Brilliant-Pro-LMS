@@ -1,28 +1,25 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const learnerSchema = Schema({
-    name: {
+const certificateSchema = Schema({
+    fileName: {
         type: String,
         required: true
     },
-    email: {
+    userId: {
         type: String,
         required: true
     },
-    password: {
+    courseId: {
         type: String,
         required: true
     },
-    image: {
+    courseName: {
         type: String,
         required: true
-    },
-    courses: {
-        type: Array
     }
 }, {
     timestamps: true
 });
 
-module.exports = mongoose.model("Learner", learnerSchema);
+module.exports = mongoose.model("Certificate", certificateSchema);

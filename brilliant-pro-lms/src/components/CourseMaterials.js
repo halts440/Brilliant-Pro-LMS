@@ -43,6 +43,51 @@ function CourseMaterials(props) {
         getMaterialsData()
     }, [])
 
+    function addCourseMaterial(courseId, materialId) {
+        console.log("C: ", courseId)
+        fetch('http://localhost:4000/api/courses/addCourseMaterial', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                material: materialId,
+                course: courseId
+            })
+            })
+            .then(response => response.json() )
+            .then(data => {
+                console.log(data)
+                if(data.status === 'success') {
+                    getMaterialsData() 
+                }
+            })
+            .catch( (err) => {
+                console.log("An error occured", err);
+            })
+    }
+
+    function removeCourseMaterial(courseId, materialId) {
+        fetch('http://localhost:4000/api/courses/removeCourseMaterial', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                material: materialId,
+                course: courseId
+            })
+            })
+            .then(response => response.json() )
+            .then(data => {
+                console.log(data)
+                if(data.status === 'success') {
+                    getMaterialsData()
+                }
+            })
+            .catch( (err) => {
+                console.log("An error occured", err);
+            })
+    }
+
     return (
         <div>
             {
@@ -53,15 +98,15 @@ function CourseMaterials(props) {
                             <tr key={index}>
                                 <td>{elem.filename}</td>
                                 <td>
-                                    { materialsList.includes(elem._id) && 
-                                        (<button className="btn btn-danger">Remove</button>)
+                                    { addedMaterials.includes(elem._id) && 
+                                        (<button className="btn btn-danger" onClick={
+                                            () => removeCourseMaterial(props.id, elem._id)
+                                        }>Remove</button>)
                                     }
-                                    {!materialsList.includes(elem._id) && 
+                                    {!addedMaterials.includes(elem._id) && 
                                         (<button className="btn btn-primary"
                                         onClick={
-                                            () => {
-                                                //enrollLearner(props.id, elem._id)
-                                            }
+                                            () => addCourseMaterial(props.id, elem._id)
                                         }
                                         >Add</button>)
                                     }
