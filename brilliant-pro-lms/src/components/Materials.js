@@ -1,12 +1,25 @@
 import { useEffect, useState, useRef } from 'react';
 import AdminNavigation from './AdminNavigation';
 import { ArrowLeftShort } from 'react-bootstrap-icons';
+import Modal from 'react-bootstrap/Modal'
+import { PencilSquare, Trash } from 'react-bootstrap-icons';
 
 function Materials() {
     const [path, setPath] =useState('materials')
     const [oldPath, setOldPath] =useState('materials')
     const [nameList, setNameList] = useState([])
     const inputFile = useRef(null) 
+    
+    const [show, setShow] = useState(false);
+    const handleClose = () => setShow(false);
+    const handleShow = () => setShow(true);
+    const [newDirName, setNewDirName] = useState('')
+
+    const [showEdit, setShowEdit] = useState(false);
+    const handleEditClose = () => setShowEdit(false);
+    const handleEditShow = () => setShowEdit(true);
+    const [newName, setNewName] = useState('')
+    const [editName, setEditName] = useState('')
 
     function getDirInfo(dirname) {
         fetch('http://localhost:4000/api/materials/d/', {
@@ -53,11 +66,89 @@ function Materials() {
         .then( response => response.json() )
         .then( data => {
             console.log(data)
-            getDirInfo('materials')
+            getDirInfo(path)
          })
         .catch(
             error => console.log(error)
         );
+    }
+
+    function handleEdit() {
+        if(editName.trim() !== newName.trim() ) {
+            fetch('http://localhost:4000/api/materials/edit', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json'  },
+                body: JSON.stringify({
+                    'oldname': path+'/'+editName,
+                    'newname': newName,
+                }),
+            })
+            .then( response => response.json() )
+            .then( data => {
+                console.log(data)
+                if(data.status === 'success') 
+                    getDirInfo(path)
+                else
+                    console.log("Not Ok")
+            })
+            .catch(
+                error => console.log(error)
+            );
+        }
+    }
+
+    function handleDelete(fname) {
+        fetch('http://localhost:4000/api/materials/delete', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json'  },
+            body: JSON.stringify({
+                'fpath': path+'/'+fname,
+            }),
+        })
+        .then( response => response.json() )
+        .then( data => {
+            if(data.status === 'success') 
+                getDirInfo(path)
+            else
+                console.log("Not Ok")
+        })
+        .catch(
+            error => console.log(error)
+        );
+    }
+
+    function handleCreateFolder() {
+        if( newDirName.trim() !== '' ) {
+            fetch('http://localhost:4000/api/materials/create-directory', {
+                method: 'POST',
+                body: JSON.stringify({
+                    'parentDir': path,
+                    'newDirName': newDirName
+                }),
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then( response => response.json() )
+            .then( data => {
+                if(data.status === 'success') 
+                    getDirInfo(path)
+                setNewDirName('')
+                setShow(false)
+            })
+            .catch(
+                error => console.log(error)
+            );
+        }
+    }
+
+    function handleChange(event) {
+        const value = event.target.value;
+        const name = event.target.name;
+        if( name === 'newDirName')
+            setNewDirName(value)
+        else if( name === 'newName')
+            setNewName(value)
     }
 
     return (
@@ -66,42 +157,53 @@ function Materials() {
             <div>
                 <input className='d-none' id='materialFile' onChange={ uploadFiles } name="myfile" type='file' ref={inputFile} />
             
-                <div className="modal fade" id="exampleModal" tabIndex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                    <div className="modal-dialog" role="document">
-                        <div className="modal-content">
-                        <div className="modal-header">
-                            <h5 className="modal-title" id="exampleModalLabel">Modal title</h5>
-                            <button type="button" className="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            ...
-                        </div>
-                        <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" data-dismiss="modal">Close</button>
-                            <button type="button" className="btn btn-primary">Save changes</button>
-                        </div>
-                        </div>
-                    </div>
-                </div>
+                <Modal show={show} onHide={handleClose}>
+                    <Modal.Header closeButton>
+                    <Modal.Title>Add Folder</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <label>Folder Name</label>
+                        <input type="text" name='newDirName' value={newDirName} onChange={handleChange}/>
+                    </Modal.Body>
+                    <Modal.Footer>
+                    <button variant="primary" onClick={handleCreateFolder}>
+                        Create
+                    </button>
+                    </Modal.Footer>
+                </Modal>
+
+                <Modal show={showEdit} onHide={handleEditClose}>
+                    <Modal.Header closeButton>
+                    <Modal.Title>Edit Name</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <input type="text" name='newName' value={newName} onChange={handleChange}/>
+                    </Modal.Body>
+                    <Modal.Footer>
+                    <button variant="primary" onClick={ () => {
+                        handleEdit()
+                        handleEditClose()
+                    }}>
+                        Update
+                    </button>
+                    </Modal.Footer>
+                </Modal>
 
                 <h1 className='cheader'>Materials</h1>
-                <div className='p-3 w-90 materials-container'>
+                <div className='p-3 w-75 materials-container'>
                     <div className='d-flex justify-content-between'>
                         <p className='d-inline'>
                             { path !== 'materials' && (<ArrowLeftShort size={35} onClick={() => getDirInfo(oldPath) } />)}
                         /{path}/</p>
                         <div>
-                            <button className='btn btn-primary mx-sm-2' data-toggle="modal" data-target="#exampleModal">Create Folder</button>
+                            <button className='btn btn-primary mx-sm-2' onClick={handleShow}>Create Folder</button>
                             <button className='btn btn-primary mx-sm-2' onClick={ () => inputFile.current.click() }>Upload File</button>
                         </div>
                     </div>
                     <div className='w-90 h-100'>
                         {
                             nameList.length > 0 && nameList.map( (elem, index) => (
-                                <div className='m-3 d-flex align-items-center' key={index}>
-                                    <input className="form-check-input" type="checkbox" id="checkboxNoLabel" value=""></input>
+                                <div className='m-3 d-flex justify-content-between align-items-center' key={index}>
                                     <div className='d-flex align-items-center mx-sm-2 mat-item' onDoubleClick={() => handleDoubleClick(elem) }>
                                     { elem.endsWith('.pdf') && 
                                         <img src={process.env.PUBLIC_URL + '/images/pdf.png'} />
@@ -117,6 +219,14 @@ function Materials() {
                                         <img src={process.env.PUBLIC_URL + '/images/folder.png'} />
                                     }
                                     <p className='my-0 mx-sm-3'>{elem}</p>
+                                    </div>
+                                    <div>
+                                        <PencilSquare className='mx-sm-3' color='#30AC13' size={27} onClick={ () => {
+                                            setNewName(elem)
+                                            setEditName(elem)
+                                            handleEditShow()
+                                        }} />
+                                        <Trash className='mx-sm-3' color='#990F02' size={27} onClick={ () => handleDelete(elem) } />
                                     </div>
                                 </div>
                             ))

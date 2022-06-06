@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { PencilSquare, Trash } from "react-bootstrap-icons";
+import { useNavigate } from "react-router-dom";
 
 function AssessmentList() {
+    const navigate = useNavigate()
     const [ assessments, setAssessments] = useState([]);
 
-    function getAllLearnersData() {
+    function getAllAssessmentsData() {
         fetch('http://localhost:4000/api/assessments', {
             method: 'GET',
             headers: {
@@ -23,7 +25,25 @@ function AssessmentList() {
             })
     }
 
-    getAllLearnersData()
+    getAllAssessmentsData()
+
+    function deleteAssessment(delId) {
+        fetch('http://localhost:4000/api/assessments/delete/'+delId, {
+            method: 'DELETE',
+            headers: {
+            'Content-Type': 'application/json',
+            },
+            })
+            .then(response => response.json() )
+            .then(data => {
+                if( data.status === 'success') {
+                    console.log('Assessment deleted successfully')
+                    //navigate('/admin/assessments', {replace: true})
+                    getAllAssessmentsData()
+                }
+                console.log('Success:', data);
+            });
+    }
 
     return (
         <div>
@@ -46,8 +66,13 @@ function AssessmentList() {
                                 <td>{elem.assessmentName}</td>
                                 <td>{elem.duration}</td>
                                 <td>{elem.minPassing}</td>
-                                <td><PencilSquare color='green' size={25} /></td>
-                                <td><Trash color='red' size={25} /></td>
+                                <td><button className='btn btn-success' onClick={
+                                    () => 
+                                    navigate('/admin/assessments/'+elem._id)
+                                }>View</button></td>
+                                <td><Trash color='red' size={25} onClick={
+                                    () => deleteAssessment(elem._id)
+                                } /></td>
                             </tr>
                         ) )}
                     </tbody>

@@ -10,12 +10,11 @@ require("dotenv").config();
 const Learner = require("./models/learner");
 const Course = require("./models/course");
 const Admin = require("./models/admin");
+const Material = require("./models/material");
 const Assessment = require('./models/assessment')
-const FolderFolder = require('./models/folderFolder')
-const FolderFile = require('./models/folderFile')
 const fs = require('fs')
 const os = require('os')
-const fileUpload = require('express-fileupload')
+const fileUpload = require('express-fileupload');
 
 // connecting to mongodb
 mongoose
@@ -91,9 +90,16 @@ app.route("/register").post( (req, res, next) => {
 app.route('/api/learners').get( (req, res) => {
   Learner.find({}, (err, data) => {
     if(err)
-      return res.json({})
+      return res.json({
+        status: 'fail',
+        message: 'Failed to get learners list'
+      })
     else
-      return res.json(data)
+      return res.json({
+        status: 'success',
+        message: 'Got the learners list',
+        learners: data
+      })
   })
 })
 
@@ -351,6 +357,37 @@ app.route('/api/learners/delete/:id').delete( (req, res) => {
   })
 });
 
+app.route('/api/courses/add').post( (req, res) => {
+  const course = new Course(req.body)
+  course.save( (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to add course '+err
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Course added'
+      })
+  })
+})
+
+app.route('/api/courses/update').put( (req, res) => {
+  Course.findByIdAndUpdate(req.body.id, req.body.course, (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to update course '+err
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Course updated'
+      })
+  })
+})
+
 app.route('/api/assessments/add').post( (req, res) => {
   const assessment = new Assessment(req.body)
   assessment.save( (err, data) => {
@@ -367,8 +404,238 @@ app.route('/api/assessments/add').post( (req, res) => {
   })
 })
 
+app.route('/api/assessments/update/:id').put( (req, res) => {
+  Assessment.findByIdAndUpdate(req.params.id, req.body, (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to update assessment'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Assessment updated'
+      })
+  })
+})
+
+app.route('/api/assessments/delete/:id').delete( (req, res) => {
+  Assessment.findByIdAndDelete(req.params.id, (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to delete assessment'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Assessment deleted'
+      })
+  })
+})
+
 app.route('/api/assessments').get( (req, res) => {
   Assessment.find({}, (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to get assessments'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Got the assessments',
+        'assessments': data
+      })
+  })
+})
+
+app.route('/api/courses').get( (req, res) => {
+  Course.find({}, (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to get courses list'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Got the courses list',
+        'courses': data
+      })
+  })
+})
+
+app.route('/api/materials').get( (req, res) => {
+  Material.find({}, (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to get materials list'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Got the materials list',
+        'materials': data
+      })
+  })
+})
+
+app.route('/api/courses/:id').get( (req, res) => {
+  Course.findById(req.params.id, (err, data) => {
+    if(err)
+      return res.json({
+        status: 'fail',
+        message: 'Failed to get course details'
+      })
+    else
+      return res.json({
+        status: 'success',
+        message: 'Got the course details',
+        'course': data
+      })
+  })
+})
+
+app.route('/api/courses/enroll').post( (req, res) => {
+  const courseId = req.body.course
+  const userId = req.body.learner
+  Course.findById(courseId, (err, data) => {
+    if(err) {
+      return res.json({
+        status: 'fail',
+        message: 'failed to get course related information'
+      })
+    }
+    else {
+      const myUserList = data.learnersList
+      myUserList.push(userId)
+      Course.findByIdAndUpdate(courseId, {
+        'learnersList': myUserList
+      },
+      (err, data) => {
+        if(err) {
+          return res.json({
+            status: 'fail',
+            message: 'Some issue occured while enrolling student'
+          })
+        } 
+        else {
+          return res.json({
+            status: 'success',
+            message: 'Successfully enrolled the student'
+          })
+        }
+      })
+    }
+  })
+})
+
+app.route('/api/courses/unenroll').post( (req, res) => {
+  const courseId = req.body.course
+  const userId = req.body.learner
+  Course.findById(courseId, (err, data) => {
+    if(err) {
+      return res.json({
+        status: 'fail',
+        message: 'failed to get course related information'
+      })
+    }
+    else {
+      const myUserList = data.learnersList
+      myUserList.splice( myUserList.indexOf(userId, 1 ) )
+      Course.findByIdAndUpdate(courseId, {
+        'learnersList': myUserList
+      },
+      (err, data) => {
+        if(err) {
+          return res.json({
+            status: 'fail',
+            message: 'Some issue occured while unenrolling student'
+          })
+        } 
+        else {
+          return res.json({
+            status: 'success',
+            message: 'Successfully unenrolled the student'
+          })
+        }
+      })
+    }
+  })
+})
+
+app.route('/api/courses/addCourseAssessment').post( (req, res) => {
+  const courseId = req.body.course
+  const assessmentId = req.body.assessment
+  Course.findById(courseId, (err, data) => {
+    if(err) {
+      return res.json({
+        status: 'fail',
+        message: 'failed to get course related information'
+      })
+    }
+    else {
+      const myAssessmentList = data.assessmentsList
+      myAssessmentList.push(assessmentId)
+      Course.findByIdAndUpdate(courseId, {
+        'assessmentsList': myAssessmentList
+      },
+      (err, data) => {
+        if(err) {
+          return res.json({
+            status: 'fail',
+            message: 'Some issue occured while adding assessment to course'
+          })
+        } 
+        else {
+          return res.json({
+            status: 'success',
+            message: 'Successfully added assessment item to course'
+          })
+        }
+      })
+    }
+  })
+})
+
+app.route('/api/courses/removeCourseAssessment').post( (req, res) => {
+  const courseId = req.body.course
+  const assessmentId = req.body.assessment
+  Course.findById(courseId, (err, data) => {
+    if(err) {
+      return res.json({
+        status: 'fail',
+        message: 'failed to get course related information'
+      })
+    }
+    else {
+      const myAssessmentList = data.assessmentsList
+      myAssessmentList.splice( myAssessmentList.indexOf(assessmentId, 1 ) )
+      Course.findByIdAndUpdate(courseId, {
+        'assessmentList': myAssessmentList
+      },
+      (err, data) => {
+        if(err) {
+          return res.json({
+            status: 'fail',
+            message: 'Some issue occured while removing assessment item from course'
+          })
+        } 
+        else {
+          return res.json({
+            status: 'success',
+            message: 'Successfully removed assessment item from course'
+          })
+        }
+      })
+    }
+  })
+})
+
+app.route('/api/assessments/:id').get( (req, res) => {
+  Assessment.findOne({'_id': req.params.id}, (err, data) => {
     if(err)
       return res.json({
         status: 'fail',
@@ -415,6 +682,12 @@ app.route('/api/materials/upload').post( (req, res) => {
       else {
         let myfile = req.files.myfile;
         myfile.mv( './public/' + req.body.dirname + '/' + myfile.name, myfile.name)
+        const newMaterial = new Material({
+          filename: myfile.name,
+          path: req.body.dirname,
+          courses: []
+        });
+        newMaterial.save()
         return res.send({
             status: 'success',
             message: 'File is uploaded on server',
@@ -424,6 +697,191 @@ app.route('/api/materials/upload').post( (req, res) => {
     return res.json({
       status: 'fail',
       message: 'Some error occured while uploading'
+    })
+  }
+})
+
+app.route('/api/materials/create-directory').post( (req, res) => {
+  const parentDir = './public/' + req.body.parentDir;
+  const newDirName = req.body.newDirName;
+
+  try {
+    if(fs.existsSync(parentDir)) {
+      if(fs.existsSync(parentDir+'/'+newDirName)) {
+        return res.json({
+          status: 'fail',
+          message: 'Cannot create new folder as it already exists'
+        })
+      }
+      else {
+        fs.mkdirSync(parentDir+'/'+newDirName)
+        return res.json({
+          status: 'success',
+          message: 'New folder created'
+        })
+      }
+    }
+    else {
+      return res.json({
+        status: 'fail',
+        message: 'Parent directory does not exists'
+      })
+    }
+  }
+  catch {
+    return res.json({
+      status: 'fail',
+      message: 'Some issue occured on server side'
+    })
+  }
+})
+
+app.route('/api/materials/delete').delete( (req, res) => {
+  const fpath = req.body.fpath;
+  // check if it is a filename or a folder name
+  if( fpath.endsWith('.pdf') || fpath.endsWith('.pptx') || fpath.endsWith('.ppt') || fpath.endsWith('.mp4') ) {
+    // is a file
+    // seperate the filename and directory path
+    console.log(fpath)
+    const fname = fpath.substr( fpath.lastIndexOf('/')+1, fpath.length )
+    const dirname = fpath.substr(0, fpath.lastIndexOf('/') )
+    console.log("Folder Name: ", dirname)
+    console.log("File Name: ", fname)
+    // find the file in materials collection
+    Material.findOne({'filename': fname, 'path': dirname}, (err, data) => {
+      if(err) {
+        return res.json({
+          status: 'fail',
+          message: 'some issue occured on server side'
+        })
+      }
+      else {
+        // remove from courses
+        // remove from actual directory
+        try{
+          fs.unlinkSync('./public/'+fpath)
+          return res.json({
+            status: 'success',
+            message: 'Deleted the file'
+          })
+        }
+        catch {
+          return res.json({
+            status: 'fail',
+            message: 'Failed to delete the file'
+          })
+        }
+      }
+    })
+  }
+  else {
+    // is a folder
+    console.log("Just Folder: ", fpath)
+    Material.find({path: {$regex: '/^'+fpath+'/'} }, (err, data) => {
+      if(err) {
+        return res.json({
+          status: 'fail',
+          message: 'Some issue occured on server side'
+        })
+      }
+      else {
+        // remove from courses
+        // remove all files and folders in this directory recurrsively
+        try {
+            fs.rmdirSync('./public/'+fpath, { recursive: true });
+            return res.json({
+              status: 'success',
+              message: 'Deleted the folder'
+            })
+        }
+        catch (err) {
+          return res.json({
+            status: 'fail',
+            message: 'Failed to remove folder' + err
+          })
+        }
+      }
+    })
+  }
+})
+
+app.route('/api/materials/edit').put( (req, res) => {
+  oldname = req.body.oldname
+  newname = req.body.newname
+  // check if it is a filename or a folder name
+  if( oldname.endsWith('.pdf') || oldname.endsWith('.pptx') || oldname.endsWith('.ppt') || oldname.endsWith('.mp4') ) {
+    // is a file
+    // seperate the filename and directory path
+    const fname = oldname.substr( oldname.lastIndexOf('/')+1, oldname.length )
+    const dirname = oldname.substr(0, oldname.lastIndexOf('/') )
+    console.log("Folder Name: ", dirname)
+    console.log("File Name: ", fname)
+    // find the file in materials collection
+    Material.findOne({'filename': fname, 'path': dirname}, (err, data) => {
+      if(err) {
+        return res.json({
+          status: 'fail',
+          message: 'Some issue occured on server side'
+        })
+      }
+      else {
+        // rename the file in database
+        Material.findOneAndUpdate({'filename': fname, 'path': dirname}, {'filename': newname}, (err, data) => {
+          if(err) {
+            return res.json({
+              status: 'fail',
+              message: 'Some issue occured on server side'
+            })
+          }
+        })
+
+        // rename in actual directory
+        try{
+          console.log("K: ./public/"+oldname)
+          console.log("K: ./public/"+newname)
+          fs.renameSync('./public/'+oldname, './public/'+dirname+'/'+newname)
+          return res.json({
+            status: 'success',
+            message: 'Renamed the file'
+          })
+        }
+        catch {
+          return res.json({
+            status: 'fail',
+            message: 'Failed to rename the file'
+          })
+        }
+      }
+    })
+  }
+  else {
+    // is a folder
+    console.log("Just Folder: ", oldname)
+    var dirname = oldname.substr(0, oldname.lastIndexOf('/') ) + '/' + newname 
+    Material.updateMany({path: {$regex: '/^'+oldname+'/'}}, {path: dirname}, (err, data) => {
+      if(err) {
+        return res.json({
+          status: 'fail',
+          message: 'Some issue occured on server side'
+        })
+      }
+      else {
+        try {
+          console.log('Last Old: ./public/'+oldname)
+          console.log('Last New: ./public/'+dirname )
+            fs.renameSync('./public/'+oldname, './public/'+dirname);
+            return res.json({
+              status: 'success',
+              message: 'Renamed folder'
+            })
+        }
+        catch (err) {
+          return res.json({
+            status: 'fail',
+            message: 'Failed to rename folder' + err
+          })
+        }
+      }
     })
   }
 })

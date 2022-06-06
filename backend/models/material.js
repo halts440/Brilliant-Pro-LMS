@@ -1,12 +1,16 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
-const folderFolderSchema = Schema({
-    parent: {
+const materialSchema = Schema({
+    filename: {
         type: String,
         required: true
     },
-    child: {
+    path: {
+        type: String,
+        required: true
+    },
+    courses: {
         type: Array,
         required: true
     },
@@ -14,4 +18,4 @@ const folderFolderSchema = Schema({
     timestamps: true
 });
 
-module.exports = mongoose.model("FolderFolder", folderFolderSchema);
+module.exports = mongoose.model("Material", materialSchema);

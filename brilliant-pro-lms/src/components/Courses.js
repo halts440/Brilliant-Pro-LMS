@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import AdminNavigation from './AdminNavigation';
+import CoursesList from './CoursesList';
 
 function Courses() {
     const navigate = useNavigate()
@@ -13,6 +14,7 @@ function Courses() {
             <div>
                 <h1 className='cheader'>Courses</h1>
                 <button onClick={navigateToAddCourse}  className='btn btn-primary'> Add </button>
+                <CoursesList />
             </div>
         </div>
     );

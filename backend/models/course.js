@@ -6,7 +6,7 @@ const courseSchema = Schema({
         type: String,
         required: true
     },
-    name: {
+    courseName: {
         type: String,
         required: true
     },
@@ -29,6 +29,15 @@ const courseSchema = Schema({
     enrollmentLink: {
         type: String,
         required: true
+    },
+    learnersList: {
+        type: []
+    },
+    materialsList: {
+        type: []
+    },
+    assessmentsList: {
+        type: []
     }
 }, {
     timestamps: true

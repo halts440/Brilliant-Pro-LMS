@@ -1,10 +1,6 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import AdminNavigation from "./AdminNavigation";
+import { useEffect, useState } from "react"
 
-
-function AddCourse(props) {
-    const navigate = useNavigate()
+function UpdateCourseSettings (props) {
     const [code, setCode] = useState('')
     const [courseName, setCourseName] = useState('')
     const [overview, setOverview] = useState('')
@@ -12,6 +8,34 @@ function AddCourse(props) {
     const [startDate, setStartDate] = useState('')
     const [endDate, setEndDate] = useState('')
     const [enrollmentLink, setEnrollmentLink] = useState('')
+
+    function getCourseData() {
+        fetch('http://localhost:4000/api/courses/'+props.id, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json' },
+            })
+            .then(response => response.json() )
+            .then(data => {
+                console.log(data)
+                if(data.status === 'success') {
+                    setCode(data.course.code)
+                    setCourseName(data.course.courseName)
+                    setOverview(data.course.overview)
+                    setImage(data.course.image)
+                    setStartDate(data.course.startDate)
+                    setEndDate(data.course.endDate)
+                    setEnrollmentLink(data.course.enrollmentLink)
+                }
+            })
+            .catch( (err) => {
+                console.log("An error occured", err);
+            })
+    }
+
+    useEffect( () => {
+        getCourseData()
+    }, [])
 
     function handleChange(event) {
         const value = event.target.value;
@@ -44,31 +68,31 @@ function AddCourse(props) {
             'startDate': startDate,
             'endDate': endDate,
             'enrollmentLink' : enrollmentLink,
-            'learnersList': [],
-            'assessmentsList': [],
-            'materialsList': []
+            'learnersList': []
         }
-        fetch('http://localhost:4000/api/courses/add', {
-            method: 'POST',
+        fetch('http://localhost:4000/api/courses/update', {
+            method: 'PUT',
             headers: {
-            'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+                'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                'id': props.id,
+                'course' : data
+            })
             })
             .then(response => response.json() )
             .then(data => {
-                if( data.status === 'success')  {
-                    navigate('/admin/courses', {replace: true})
+                console.log(data)
+                if(data.status === 'success') {
+                    getCourseData()
                 }
-                console.log('Success:', data);
-            });
+            })
+            .catch( (err) => {
+                console.log("An error occured", err);
+            })
     }
-
 
     return (
         <div>
-            <AdminNavigation />
-            <h1>Add Course</h1>
             <table>
                 <tbody>
                 <tr>
@@ -106,15 +130,13 @@ function AddCourse(props) {
                     <td><input type='text' name='enrollmentLink' value={enrollmentLink} onChange={handleChange}/></td>
                 </tr>
                 <tr>
-                    <td><input type='submit' value='Add Course' onClick={handleSubmit}></input></td>
+                    <td><input type='submit' value='Update Course' onClick={handleSubmit}></input></td>
                     <td></td>
                 </tr>
-
-                
                 </tbody>
             </table>
         </div>
-    );
-};
+    )
+}
 
-export default AddCourse;
+export default UpdateCourseSettings;
