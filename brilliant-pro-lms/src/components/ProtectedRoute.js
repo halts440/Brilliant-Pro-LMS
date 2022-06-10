@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 
 function ProtectedRoute (props) {
     const token = localStorage.getItem('token');
+    const [auth_status, setAuthStatus] = useState('unkown')
 
-    async function isAuthenticated() {
-        return await fetch('http://localhost:4000/checkUser', {
+    fetch('http://localhost:4000/checkUser', {
             method: 'POST',
             headers: {
                 'x-access-token' : token,
@@ -12,19 +13,28 @@ function ProtectedRoute (props) {
             },
             body: JSON.stringify({ 'role': props.role }),
             })
-            .then(response => response.json().isAuth )
+            .then(response => response.json() )
+            .then(data => {
+                if(data.isAuth)
+                    setAuthStatus('valid')
+                else
+                    setAuthStatus('invalid')
+            })
             .catch( (err) => {
                 console.log("An error occured", err);
                 return false;
             });
+    
+    return (<div>
+    { auth_status === 'unkown' && <div></div>
     }
-
-    if(token) {
-        if( isAuthenticated() ) {
-            return <Outlet/>
-        }
+    {
+    auth_status === 'valid' && <Outlet/>
     }
-    return <Navigate to='/' replace />
+    {
+    auth_status === 'invalid' && <Navigate to='/' replace />
+    }
+    </div>)
 }
 
 export default ProtectedRoute;
