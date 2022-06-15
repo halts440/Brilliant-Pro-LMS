@@ -31,6 +31,7 @@ function LearnerCourseList(props) {
 
     return (
         <div>
+            <h1>My Courses</h1>
             {
             courses.length > 0 &&
                 <div className="row">{
@@ -38,7 +39,7 @@ function LearnerCourseList(props) {
                         myCourseList.includes(elem._id) &&
                         <div key={index} className="col-sm-4">
                             <Card style={{ width: '18rem' }}>
-                                <Card.Img variant="top" src="holder.js/100px180" />
+                                <Card.Img variant="top" src={process.env.PUBLIC_URL + "/course_image.webp"} />
                                 <Card.Body>
                                     <Card.Title>{elem.courseName}</Card.Title>
                                     <button variant="primary" onClick={
