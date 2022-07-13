@@ -154,7 +154,7 @@ function Materials() {
     return (
         <div>
             <AdminNavigation />
-            <div>
+            <div className='pb-5'>
                 <input className='d-none' id='materialFile' onChange={ uploadFiles } name="myfile" type='file' ref={inputFile} />
             
                 <Modal show={show} onHide={handleClose}>
@@ -193,7 +193,8 @@ function Materials() {
                 <div className='p-3 w-75 materials-container'>
                     <div className='d-flex justify-content-between'>
                         <p className='d-inline'>
-                            { path !== 'materials' && (<ArrowLeftShort size={35} onClick={() => getDirInfo(oldPath) } />)}
+                            { path !== 'materials' && (<ArrowLeftShort className='back-arrow' size={35} onClick={() => getDirInfo(oldPath) } />)}
+                            { path === 'materials' && (<ArrowLeftShort className='back-arrow-hidden' size={35} />)}
                         /{path}/</p>
                         <div>
                             <button className='btn btn-primary mx-sm-2' onClick={handleShow}>Create Folder</button>

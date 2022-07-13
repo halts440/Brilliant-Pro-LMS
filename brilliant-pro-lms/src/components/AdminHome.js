@@ -6,7 +6,9 @@ function AdminHome(props) {
         <div>
             <AdminNavigation />
             <div>
-                <h1>Admin Dashboard</h1>
+                <p>Total number of courses 45</p>
+                <p>Number of learners: 45</p>
+                <p>Certificates Issues: 67</p>
             </div>
         </div>
     );

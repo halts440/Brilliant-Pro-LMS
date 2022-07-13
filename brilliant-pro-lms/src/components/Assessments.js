@@ -13,7 +13,7 @@ function Assessments() {
             <div>
                 <h1 className='cheader'>Assessments</h1>
                 <div className='w-50 my-centered-div d-flex justify-content-end'>
-                    <button onClick={navigateToAddLearner}  className='btn btn-primary'> Add </button>
+                    <button onClick={navigateToAddLearner}  className='btn btn-primary add-btn'> Add </button>
                 </div>
                 <AssessmentList />
             </div>

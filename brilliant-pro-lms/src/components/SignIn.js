@@ -33,8 +33,10 @@ function SignIn (props){
                 console.log('Success:', data);
                 if(data.status === 'success') {
                     localStorage.setItem('token', data.token);
-                    if(data.role === 'learner')
-                        navigate('/learner/'+data.id, {replace:true} )
+                    if(data.role === 'learner') {
+                        localStorage.setItem('userid', data.userid)
+                        navigate('/learner', {replace:true} )
+                    }
                     else if(data.role === 'admin')
                         navigate('/admin', {replace:true} )
                 }

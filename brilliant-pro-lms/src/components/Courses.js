@@ -11,11 +11,12 @@ function Courses() {
     return (
         <div>
             <AdminNavigation />
-            <div>
+            <div className='pb-5'>
                 <h1 className='cheader'>Courses</h1>
                 <div className='w-75 my-centered-div'>
                     <div className='d-flex justifty-content-right'>
-                        <button onClick={navigateToAddCourse}  className='btn btn-primary'> Add </button>
+                        <button
+                         onClick={navigateToAddCourse}  className='btn btn-primary add-btn'> Add </button>
                     </div>
                     <CoursesList />
                 </div>

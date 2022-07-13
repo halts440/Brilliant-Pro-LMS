@@ -12,11 +12,12 @@ const Course = require("./models/course");
 const Admin = require("./models/admin");
 const Material = require("./models/material");
 const Assessment = require('./models/assessment')
-const Certificate = require('./models/certificate')
-const LearnerProress = require('./models/learnerprogress')
+const LearnerProgress = require('./models/learnerprogress')
 const fs = require('fs')
 const os = require('os')
 const fileUpload = require('express-fileupload');
+var randomstring = require("randomstring");
+const { jsPDF } = require("jspdf");
 
 // connecting to mongodb
 mongoose
@@ -45,14 +46,14 @@ app.use(fileUpload());
 //app.use(express.static(path.join(__dirname, 'dist/mean-stack-crud-app')))
 //app.use('/', express.static(path.join(__dirname, 'dist/mean-stack-crud-app')))
 //app.use('/api', employeeRoute)
-app.route("/").get( (req, res, next) => {
+app.route("/").get( (req, res) => {
     res.send("Working");
 });
 
-app.route("/register").post( (req, res, next) => {
+app.route("/api/register").post( (req, res) => {
   const userData = req.body;
-  console.log(userData);
 
+  // check there is already a learner registered with this email or not
   Learner.findOne({email: userData.email}, (err, data) => {
     if(data) {
       return res.json({
@@ -61,17 +62,31 @@ app.route("/register").post( (req, res, next) => {
       });
     }
     else {
+      // encrypt the password
       bcrypt.hash(userData.password, 10).then( (data) => {
           userData.password = data;
-          if(userData.image == '') {
-            userData.image = 'default';
+
+          // save learner profile picture and its name
+          if(userData.imageType=='default')
+            userData.image = 'default_profile.png';
+          else {
+            imageFileName = req.files.image.name;
+            fileExtenstion = imageFileName.substr( imageFileName.lastIndexOf('.') + 1 );
+            imageFileName = randomstring.generate() + '.' + fileExtenstion;
+            let myfile = req.files.image;
+            myfile.mv( './public/pi/'+ imageFileName, imageFileName );
+            userData.image = imageFileName;
           }
+
+          // create a new learner and save its information in mongodb
           const newLearner = new Learner({
             name: userData.name,
             email: userData.email,
             password: userData.password,
-            image: userData.image
+            image: userData.image,
+            courses: []
           });
+
           newLearner.save((err, data) => {
             if(err)
               return res.json({
@@ -105,20 +120,152 @@ app.route('/api/learners').get( (req, res) => {
   })
 })
 
+// find the progress for all the courses of a particular learner
+app.route('/api/learner-courses-list/:id').get( (req, res) => {
+  // get the list of courses learner is enrolled in
+  var learnerCoursesList = []
+  var courseDetails = []
+  var learnerProgress = []
+  Learner.findById(
+    req.params.id,
+    {'courses': 1},
+    (error, result) => {
+      if(error) return res.json({
+        'status': 'fail',
+        'message': 'Could not get the list of courses learner is enrolled in'
+      })
+
+      // save learner's courses list
+      learnerCoursesList = result.courses
+
+      // get all the courses which user was enrolled in
+      Course.find(
+        {'_id': {$in: learnerCoursesList} },
+        {
+          'courseName': 1,
+          'image': 1,
+          'materialsList': 1,
+          'assessmentsList': 1
+        },
+        (error, result) => {
+          if(error) return res.json({
+            'status': 'fail',
+            'message': 'Could not get the list of courses learner is enrolled in'
+          })
+
+          // save course details
+          courseDetails = result
+
+          // get the progress of learner in these courses
+          LearnerProgress.find(
+            { 'userId': req.params.id,
+              'courseId': {$in: learnerCoursesList} },
+            { 'userId': 0,
+              '_id': 0, 'createdAt': 0, 'updatedAt': 0, '__v': 0
+            },
+            (error, result) => {
+              if(error) return res.json({
+                'status': 'fail',
+                'message': 'Could not get the list of courses learner is enrolled in'
+              })
+
+              // save learner progress
+              learnerProgress = result
+
+              var final_output = courseDetails.map(
+                (courseItem, index) => {
+                  // find the corresponding progress of learner
+                  var lp = learnerProgress.find(lp => lp.courseId === courseItem._id.toString() )
+                  if(lp) {
+                    var total = courseItem.materialsList.length + courseItem.assessmentsList.length
+                    var done = 0
+                    const materialsDone = courseItem.materialsList.every(elem => {
+                      return lp.materials.indexOf(elem) !== -1
+                    })
+                    const assessmentsDone = courseItem.assessmentsList.every(elem => {
+                      return lp.assessments.indexOf(elem) !== -1
+                    })
+                    done = materialsDone + assessmentsDone
+                    total += 10 // later to be removed
+                    return {
+                      'id': courseItem._id,
+                      'courseName': courseItem.courseName,
+                      'image': courseItem.image,
+                      'percentage': done/total
+                    }
+                  }
+                  else return
+                }
+              )
+              if(!final_output) final_output = []
+
+              return res.json({
+                'status': 'success',
+                'message': 'Got the list of courses learner is enrolled in',
+                'courses': final_output
+              })
+            })
+          
+        }
+      )
+  })
+})
+
 app.route('/api/certificates/:userid').get( (req, res) => {
-  Certificate.find({userId: req.params.userid}, (err, data) => {
-    if(err) {
+  LearnerProgress.find({
+    'userId': req.params.userid,
+    'status': 'finished'
+  }, (error, data) => {
+    if(error)
       return res.json({
         status: 'fail',
         message: 'Some issue occurred while getting certificates information'
       })
-    }
     else {
-      return res.json({
-        status: 'success',
-        message: 'Got all the certificates data',
-        certificates: data
-      })
+      courses_progress = data;
+      if(data.length == 0) {
+        return res.json({
+          'status': 'success',
+          'message': 'User has zero number of certificates',
+          'data': []
+        })
+      }
+      else{
+        // get the courses list which user has passed.
+        courses_ids = []
+        for(var i=0; i<courses_progress.length; i++)
+          courses_ids.push(courses_progress[i].courseId);
+        Course.find({
+          'id': { $in: courses_ids}
+        }, (error, data) => {
+          if(error) {
+            return res.json({
+              'status': 'fail',
+              'message': 'Cannot get course names'
+            })
+          }
+          else {
+            final_data = []
+            courses_progress.forEach( (elem) => {
+              data.forEach( (elem2) => {
+                if( elem.courseId === elem2._id.toString() ) {
+                  final_data.push({
+                    'course_name':  elem2.courseName,
+                    'certificate': elem.certificate
+                  })
+                }
+              })
+            })
+
+            return res.json({
+              'status': 'success',
+              'message': 'Got all the certificates data',
+              'data': final_data
+            })
+
+          }
+        })
+      }
     }
   })
 })
@@ -154,7 +301,7 @@ app.route("/login").post( (req, res, next) => {
                   message: 'User logged in successfully',
                   token: 'Bearer '+ token,
                   role: 'learner',
-                  id: dbUser.id
+                  userid: dbUser._id
                 })
               }
             }
@@ -295,7 +442,6 @@ app.route("/admin/login").post( (req, res, next) => {
 
 app.route("/admin/add").post( (req, res, next) => {
   const userData = req.body;
-  console.log(userData);
 
   Admin.findOne({email: userData.email}, (err, data) => {
     if(data) {
@@ -363,6 +509,114 @@ app.route('/checkUser').post( verifyJWT, (req, res, next) => {
   });
 });
 
+app.route('/api/learners/edit/:userid').put( (req, res) => {
+  const userid = req.params.userid;
+  const userData = req.body;
+  const updateData = {}
+  // get the learner information
+  Learner.findOne(
+    { '_id': userid },
+    (err, data) => {
+    if(data) {
+      oldData = data;
+      // if new password is given generate its hash
+      if( userData.password != '') {
+        updateData.password = bcrypt.hashSync(userData.password, 10);
+      }
+
+      // if name is changed save the changed name
+      if( data.name != userData.name) {
+        updateData.name = userData.name;
+      }
+
+      // if both emails donot match it means user provided a new email
+      if(data.email != userData.email) {
+        Learner.findOne({
+          'email': userData.email
+        },(err, data) => {
+          if(data) {
+            return res.json({
+              status: "fail",
+              message: "Email has already been taken"
+            });
+          }
+          else {
+            // can use this email. save in updateData
+            updateData.email = userData.email;
+
+            // image is changed
+            if(userData.image != '') {
+              imageFileName = req.files.image.name;
+              fileExtenstion = imageFileName.substr( imageFileName.lastIndexOf('.') + 1 );
+              imageFileName = randomstring.generate() + '.' + fileExtenstion;
+              let myfile = req.files.image;
+              myfile.mv( './public/pi/'+ imageFileName, imageFileName );
+              updateData.image = imageFileName;
+              try{ fs.unlinkSync('./public/pi/'+oldData.image) }
+              catch { }
+            }
+
+            // update user 
+            Learner.findByIdAndUpdate(
+              { _id: userid },
+              { $set: updateData },
+              (err, data) => {
+                if(err)
+                  return res.json({
+                    status: "fail",
+                    message: "Fail to update learner information"
+                  })
+                else
+                  return res.json({
+                    status: "success",
+                    message: "Updated learner information"
+                  })
+            })
+          }
+        })
+      }
+      // email is same
+      else {
+        // image is changed
+        if(userData.image != '') {
+          imageFileName = req.files.image.name;
+          fileExtenstion = imageFileName.substr( imageFileName.lastIndexOf('.') + 1 );
+          imageFileName = randomstring.generate() + '.' + fileExtenstion;
+          let myfile = req.files.image;
+          myfile.mv( './public/pi/'+ imageFileName, imageFileName );
+          updateData.image = imageFileName;
+          try{ fs.unlinkSync('./public/pi/'+oldData.image) }
+          catch { }
+        }
+
+        // update user 
+        Learner.findByIdAndUpdate(
+          { _id: userid },
+          { $set: updateData },
+          (err, data) => {
+            if(err)
+              return res.json({
+                status: "fail",
+                message: "Fail to update learner information"
+              })
+            else
+              return res.json({
+                status: "success",
+                message: "Updated learner information"
+              })
+          })
+        }
+    }
+    else {
+      // error user data not found
+      return res.json({
+        status: "fail",
+        message: "No user with provided id was found"
+      });
+    }
+  });
+})
+
 app.route('/api/learners/delete/:id').delete( (req, res) => {
   Learner.findOneAndDelete({_id: req.params.id}, (err, data)=> {
     if(err) 
@@ -395,7 +649,27 @@ app.route('/api/learners/:id').get( (req, res) => {
 });
 
 app.route('/api/courses/add').post( (req, res) => {
-  const course = new Course(req.body)
+  const newCourseInfo = req.body;
+
+  // save the new course image
+  imageFileName = req.files.image.name;
+  fileExtenstion = imageFileName.substr( imageFileName.lastIndexOf('.') + 1 );
+  imageFileName = randomstring.generate() + '.' + fileExtenstion;
+  let myfile = req.files.image;
+  myfile.mv( './public/ci/'+ imageFileName, imageFileName );
+
+  newCourseData = {
+    code: newCourseInfo.code,
+    courseName: newCourseInfo.courseName,
+    status: newCourseInfo.status,
+    overview: newCourseInfo.overview,
+    image: imageFileName,
+    learnersList: [],
+    materialsList: [],
+    assessmentsList: [],
+  }
+
+  const course = new Course(newCourseData)
   course.save( (err, data) => {
     if(err)
       return res.json({
@@ -410,18 +684,52 @@ app.route('/api/courses/add').post( (req, res) => {
   })
 })
 
-app.route('/api/courses/update').put( (req, res) => {
-  Course.findByIdAndUpdate(req.body.id, req.body.course, (err, data) => {
+app.route('/api/courses/update/:courseid').put( (req, res) => {
+  const courseData = req.body;
+  console.log(courseData);
+  updateData = {
+    code: courseData.code,
+    courseName: courseData.courseName,
+    status: courseData.status,
+    overview: courseData.overview
+  }
+
+  // save new course image
+  if(req.body.image != '') {
+    imageFileName = req.files.image.name;
+    fileExtenstion = imageFileName.substr( imageFileName.lastIndexOf('.') + 1 );
+    imageFileName = randomstring.generate() + '.' + fileExtenstion;
+    let myfile = req.files.image;
+    myfile.mv( './public/ci/'+ imageFileName, imageFileName );
+    updateData.image = imageFileName;
+  }
+
+  Course.findById(req.params.courseid, (err, data) => {
     if(err)
       return res.json({
         status: 'fail',
-        message: 'Failed to update course '+err
+        message: 'Could not find the course'
       })
-    else
-      return res.json({
-        status: 'success',
-        message: 'Course updated'
+    else {
+      oldData = data;
+      Course.findByIdAndUpdate(req.params.courseid, updateData, (err, data) => {
+        if(err)
+          return res.json({
+            status: 'fail',
+            message: 'Failed to update course '+err
+          })
+        else {
+          // if image was updated delete older image
+          try{ fs.unlinkSync('./public/ci/'+oldData.image) }
+          catch { }
+          
+          return res.json({
+            status: 'success',
+            message: 'Course updated'
+          })
+        }
       })
+    }
   })
 })
 
@@ -457,6 +765,7 @@ app.route('/api/assessments/update/:id').put( (req, res) => {
 })
 
 app.route('/api/assessments/delete/:id').delete( (req, res) => {
+  // check where this assessment is being used
   Assessment.findByIdAndDelete(req.params.id, (err, data) => {
     if(err)
       return res.json({
@@ -536,12 +845,13 @@ app.route('/api/courses/:id').get( (req, res) => {
 })
 
 function addLearnerProgress(courseId, userId) {
-  LearnerProress.create({
+  LearnerProgress.create({
     'userId': userId,
     'courseId': courseId,
     'status': 'unfinished',
     'materials': [],
-    'assessments': []
+    'assessments': [],
+    'certificate': ''
   }, (err, data) => {
     if(err)
       return 0
@@ -551,7 +861,7 @@ function addLearnerProgress(courseId, userId) {
 }
 
 function removeLearnerProgress(courseId, userId) {
-  LearnerProress.findOneAndRemove({
+  LearnerProgress.findOneAndRemove({
     'userId': userId,
     'courseId': courseId
   }, (err, data) => {
@@ -845,10 +1155,213 @@ app.route('/api/assessments/:id').get( (req, res) => {
       return res.json({
         status: 'success',
         message: 'Got the assessments',
-        'assessments': data
+        'assessment': data
       })
   })
 })
+
+app.route('/api/assessments/user-attempt').post( (req, res) => {
+  // get all the data that is related to assessment attempt
+
+  courseId = req.body.course_id;
+  assessmentId = req.body.assessment_id;
+  learnerId = req.body.learner_id;
+
+  questions = req.body.questions;
+  userAnswers = req.body.user_answers;
+  min_passing = req.body.min_passing
+  num_correct_answers = 0;
+  passing_status = 'fail'
+
+  // calculate results
+  for(var i=0; i<questions.length; i++) {
+    if( questions[i].correctOpt === userAnswers[i] )
+      num_correct_answers += 1
+  }
+  percentage = (num_correct_answers / questions.length) * 100;
+  console.log(num_correct_answers, questions.total, percentage);
+  percentage >= min_passing ? passing_status = 'pass': passing_status = 'fail';
+
+  // check how many attempts user has already tried to pass this assessment
+  LearnerProgress.findOne(
+    {
+      'userId': learnerId,
+      'courseId': courseId,
+    }, {
+      '_id': 0,
+      'assessments': 1
+    },
+    (error, data) => {
+      // some issue occured while getting the previous progress of learner on assessments
+      if(error)
+        return res.json({
+          'status': 'fail',
+          'message': 'Could not find data for this user and course'
+        })
+
+      else {
+        // get the previous progress of learner related to this assessment
+        attempt_number = 0;
+        data = data['assessments'];
+
+        for(var i=0; i<data.length; i++) {
+          console.log(data[i]['assessment_id'], assessmentId)
+          if(data[i]['assessment_id'] === assessmentId) {
+            attempt_number += data[i].attempt;
+            break;
+          }
+        }
+
+        // attempt number is 3, donot let user update progress
+        if( attempt_number >= 3 ) {
+          return res.json({
+            'status': 'fail',
+            'message': 'You have already attempted this assessment 3 times'
+          })
+        }
+        else {
+          attempt_number += 1;
+          console.log(attempt_number)
+          LearnerProgress.findOneAndUpdate()
+          LearnerProgress.findOneAndUpdate({
+            'userId': learnerId,
+            'courseId': courseId,
+          }, {
+            $set: {
+              'assessments': {
+                'assessment_id': assessmentId,
+                'status': passing_status,
+                'attempt': attempt_number
+              }
+            } 
+          }, {
+            new: true
+          }, (error, data) => {
+            if(error)
+              return res.json({
+                'status': 'fail',
+                'message': 'Some issue occured while saving the progress'
+              })
+            else {
+              // update learner status in course
+              updateLearnerProgress(courseId, learnerId)
+
+              return res.json({
+                'status': 'success',
+                'message': 'Assessment result was saved',
+                'data': {
+                  'correct': num_correct_answers,
+                  'percentage': percentage,
+                  'passing_status': passing_status
+                }
+              })
+            }
+          })
+        }
+      }
+    }
+  )
+})
+
+function updateLearnerProgress(courseId, learnerId) {
+  // find the course details
+  Course.findOne({
+    '_id': courseId
+  }, (error, data) => {
+    if(error) {
+      // could not find course with this course id
+    }
+    else {
+      // course materials and assessments
+      c_materials = data.materialsList;
+      c_assessments = data.assessmentsList;
+      c_name = data.courseName;
+    
+      // find the learner's prgress
+      LearnerProgress.findOne({
+        'courseId': courseId,
+        'userId': learnerId,
+      }, (error, data) => {
+        if(error) {
+          // could not find learner's progress with this course and learner id
+        }
+        else {
+          // if user has not already finished the course
+          if(data.status != 'finished') {
+            // learner's progress on materials and assessments
+            lp_materials = data.materials;
+            lp_assessments = data.assessments;   
+            
+            // generate results
+            progress = 0;
+            total_items = c_materials.length + c_assessments.length;
+            c_materials.forEach( (elem) => {
+              if(elem in lp_materials) 
+                progress += 1;
+            });
+            c_assessments.forEach( (elem) => {
+              for(var i=0; i<lp_assessments.length; i++) {
+                if(elem === lp_assessments[i].assessment_id)
+                  progress += 1;
+              }
+            })
+
+            progress = (progress/total_items)*100;
+            new_status = 'unfinished'
+            if(progress === 100)
+              new_status = 'finished'
+            
+            console.log(new_status, progress);
+
+            // get user name
+            Learner.findOne({
+              '_id': learnerId
+            }, (err, data) => {
+              if(error) {
+                // issue occured while getting the user name
+              }
+              else {
+                uName = data.name;
+
+                // if user has finished the course generate its course passing certificate
+                const doc = new jsPDF();
+                certificate_text = `<div style= "
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    height: 500px;
+                ">
+                    <h1>Brilliant Pro LMS</h1>
+                    <h2>Certificate of Achievement</h2>
+                    <p>This certificate is proudly presented to ${uName} for successfully completing the course contents of${c_name}.</p>
+                </div>`
+                doc.html( certificate_text, 20, 10);
+                pdfFileName = randomstring.generate() + '.pdf';
+                doc.save(`./public/certificates/${pdfFileName}`);
+
+                // update learner progress
+                LearnerProgress.findOneAndUpdate({
+                  'courseId': courseId,
+                  'userId': learnerId,
+                }, {
+                  'status': new_status,
+                  'certificate': pdfFileName
+                }, (error, data) => {
+                  if(error)
+                    console.log("Error")
+                  else
+                    console.log("Updated")
+                });
+
+              }
+            })       
+          }
+        }
+      })
+    }
+  })
+}
 
 app.route('/api/materials/d/').post( (req, res) => {
   var dirname = './public/' + req.body.dirname
@@ -1084,6 +1597,232 @@ app.route('/api/materials/edit').put( (req, res) => {
     })
   }
 })
+
+
+
+
+
+// Routes related to courses from learner side
+
+// get list of courses which are currently active
+app.route('/api/learner/courses/all').get( (req, res) => {
+  Course.find({
+    status: 'active'
+  }, (error, data) => {
+    if(error) 
+      return res.json({
+        'status': 'fail',
+        'message': 'Could not get courses list'+error
+      })
+    return res.json({
+      'status': 'success',
+      'message': 'Got the list of courses',
+      'data': data
+    })
+  })
+})
+
+// get list of courses in which user enrolled
+app.route('/api/learner/courses/enrolled/:userid').get( (req, res) => {
+  console.log(req.params.userid);
+  Course.find({
+    learnersList: req.params.userid
+  },
+  {
+    learnersList: 0
+  },
+  (error, data) => {
+    if(error) 
+      return res.json({
+        'status': 'fail',
+        'message': 'Could not get courses list'+error
+      })
+    return res.json({
+      'status': 'success',
+      'message': 'Got the list of courses',
+      'data': data
+    })
+  })
+})
+
+// get the details of a course. return result based on wether the student is enrolled in it or not
+app.route('/api/learner/courses/c/:courseid/:userid').get( (req, res) => {
+  courseid = req.params.courseid;
+  userid = req.params.userid;
+  if(userid == 'N')
+    userid = '';
+  course = [];
+  Course.findById(courseid,
+    {
+      'createdAt': 0,
+      'updatedAt': 0,
+      '__v': 0
+    },
+    (error, data) => {
+    if(error) 
+      return res.json({
+        'status': 'fail',
+        'message': 'Could not find the course'
+      })
+
+    course = data.toObject();
+    course_materials = [];
+
+    // get the course materials details
+    Material.find(
+      {'_id': {$in: course['materialsList']} },
+      {
+        'courses': 0,
+        'createdAt': 0,
+        'updatedAt': 0,
+        '__v': 0,
+      },
+      (error, data) => {
+        if(error)
+          res.json({
+            'status': 'fail',
+            'message': 'Issue occured while getting course materials details'
+          })
+        
+        course_materials = data;
+        course_assessments = [];
+
+        // get the course assessments details
+        Assessment.find(
+          {'_id': {$in: course['assessmentsList']} },
+          (error, data) => {
+            if(error)
+              res.json({
+                'status': 'fail',
+                'message': 'Issue occured while getting course assessments details'
+              })
+
+            course_assessments = data;
+  
+            // check if user is not in the list of enrolled learners
+            if( !course['learnersList'].includes(userid) ) {
+              course['materialsList'] = course_materials;
+              course['assessmentsList'] = course_assessments;
+              return res.json({
+                'status': 'success',
+                'message': 'Got course details, user not enrolled',
+                'data': course,
+                'user_status': 'not_enrolled',
+              })
+            }
+
+            // user is enrolled in course so get the details of user
+            user_cm_status = [];
+            user_ca_status = [];
+            LearnerProgress.findOne(
+              {
+                'userId': userid,
+                'courseId': courseid
+              },
+              (error, data) => {
+                if(error || data === null) 
+                  return res.json({
+                    'status': 'fail',
+                    'message': 'Issue occured while getting learner progress in course'
+                  })
+
+                  user_cm_status = data['materials'];
+                  user_ca_status = data['assessments'];
+                  // update materials according to learner progress in course
+                  course_materials.forEach( (value, index, array) => {
+                    if( user_cm_status.includes(value['_id'].toString() ) ) 
+                      course_materials[index]['view_status'] = '1';
+                    else
+                      course_materials[index]['view_status'] = '0';
+                  })
+
+                  // update assessments according to learner progress in course
+                  course_assessments.forEach( (value, index, array) => {
+                    course_assessments[index]['view_status'] = '0';
+                    found = 0;
+                    for(i=0; i<user_ca_status.length; i++) {
+                      if( value['_id'].toString() == user_ca_status[i].assessment_id )
+                        found = 1;
+                    }
+                    if(found)
+                      course_assessments[index]['view_status'] = '1';
+                  })
+
+                  // update course materials and assessments data
+                  course['materialsList'] = course_materials;
+                  course['assessmentsList'] = course_assessments;
+                  course['user_course_status'] = data.status;
+                  course['certificate'] = data.certificate;
+                  delete course['learnersList'];
+
+                  return res.json({
+                    'status': 'success',
+                    'message': 'Got course details, user is enrolled',
+                    'data': course,
+                    'user_status': 'enrolled',
+                  })
+              }
+            )
+          }
+        ).lean()
+      }
+    ).lean()
+  })
+})
+
+
+// mark material
+// when user has opened a video, pdf or ppt file, mark that file as done
+app.route('/api/mark_material').post( (req, res) => {
+  // get the material, course and learner id
+  const materialId = req.body.materialId;
+  const courseId = req.body.courseId;
+  const learnerId = req.body.learnerId;
+  // find the materials that user has already viewed for this course
+  LearnerProgress.findOne({
+    'userId': learnerId,
+    'courseId': courseId
+  })
+  .then( learnerProgress => {
+      return learnerProgress.materials;
+  })
+  .then( materials => {
+    // check if user has already seen this material or not
+    if( materials.includes(materialId) ) {
+      res.json({
+        'status': 'success',
+        'message': 'Material was already marked'
+      })
+    }
+    else {
+      // if user has not seen the material before mark this material as done
+      materials.push(materialId)
+      LearnerProgress.findOneAndUpdate({
+        'userId': learnerId,
+        'courseId': courseId }, 
+      { $set: { materials: materials} },
+      { new: true })
+      .then( update => {
+        res.json({
+          'status': 'success',
+          'message': 'Have marked the material successfully'
+        })
+      })
+    }
+  })
+  // respond to errors
+  .catch( err => {
+    res.json({
+      'status': 'fail',
+      'message': 'Some issue occured while marking this material as done '
+    })
+  })
+})
+
+
+
+
+
 
 // starting server and listen to requets on port
 const port = process.env.PORT || 4000

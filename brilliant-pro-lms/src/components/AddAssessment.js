@@ -123,54 +123,100 @@ function AddAssessment(props) {
     return (
         <div>
             <AdminNavigation />
-            <h2>Add Assessment</h2>
+            <div className="pb-5">
+            <h2 className="cheader">Add Assessment</h2>
 
-            <div className="d-flex">
+            <div className="container-80 d-flex">
                 <div className="w-50">
                     <form onSubmit={handleSubmit}>
-                        <label>Name: </label>
-                        <input type='text' name='assessmentName' value={assessmentName} onChange={handleChange}/><br/>
-                        
-                        <label>Duration (minutes): </label>
-                        <input type='text' name='duration' value={duration} onChange={handleChange}/><br/>
-                        
-                        <label>Min Passing: </label>
-                        <input type='number' min={1} max={questions.length} name='minPassing' value={minPassing} onChange={handleChange}/><br/>
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td><label>Name: </label></td>
+                                    <td><input type='text' name='assessmentName' value={assessmentName} onChange={handleChange}/></td>
+                                </tr>
 
-                        <input type="submit" value="Add Assessment"></input><br/>
-                    </form>
+                                <tr>
+                                    <td><label>Duration (min): </label></td>
+                                    <td><input type='text' name='duration' value={duration} onChange={handleChange}/></td>
+                                </tr>
 
+                                <tr>
+                                    <td><label>Min Passing %: </label></td>
+                                    <td><input type='number' min={60} max={100} name='minPassing' value={minPassing} onChange={handleChange}/></td>
+                                </tr>
+
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                        <input
+                                        className="btn btn-primary"
+                                        type="submit" value="Add Assessment"></input>
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                        </form>
+                    
                     <br /><br />
                     <div>
-                        <label>Statement: </label>
-                        <input type='text' name='statement' value={statement} onChange={handleChange}/><br/>
-                        
-                        <label>Option 1: </label>
-                        <input type='text' name='option1' value={option1} onChange={handleChange}/><br/>
-                        <label>Option 2: </label>
-                        <input type='text' name='option2' value={option2} onChange={handleChange}/><br/>
-                        <label>Option 3: </label>
-                        <input type='text' name='option3' value={option3} onChange={handleChange}/><br/>
-                        <label>Option 4: </label>
-                        <input type='text' name='option4' value={option4} onChange={handleChange}/><br/>
-                        
-                        <label>Correct Option: </label>
-                        <select name="correctOpt" value={correctOpt} onChange={handleChange}>
-                            <option value='0'>Option 1</option>
-                            <option value='1'>Option 2</option>
-                            <option value='2'>Option 3</option>
-                            <option value='3'>Option 4</option>
-                        </select>
-                        <p>{correctOpt}</p>
-                        {
-                            addOrUpdate === 'add' &&
-                            <button onClick={addQuestion}>Add Question</button>
-                        }
-                        {
-                            addOrUpdate === 'update' &&
-                            <button onClick={ updateQuestion }>Update Question</button>
-                        }
-                        
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <td><label>Statement: </label></td>
+                                    <td><input type='text' name='statement' value={statement} onChange={handleChange}/></td>
+                                </tr>
+
+                                <tr>
+                                    <td><label>Option 1: </label></td>
+                                    <td><input type='text' name='option1' value={option1} onChange={handleChange}/></td>
+                                </tr>
+
+                                <tr>
+                                    <td><label>Option 2: </label></td>
+                                    <td><input type='text' name='option2' value={option2} onChange={handleChange}/></td>
+                                </tr>
+
+                                <tr>
+                                    <td><label>Option 3: </label></td>
+                                    <td><input type='text' name='option3' value={option3} onChange={handleChange}/></td>
+                                </tr>
+
+                                <tr>
+                                    <td><label>Option 4: </label></td>
+                                    <td><input type='text' name='option4' value={option4} onChange={handleChange}/></td>
+                                </tr>
+
+                                <tr>
+                                    <td><label>Correct Option: </label></td>
+                                    <td><select name="correctOpt" value={correctOpt} onChange={handleChange}>
+                                        <option value='0'>Option 1</option>
+                                        <option value='1'>Option 2</option>
+                                        <option value='2'>Option 3</option>
+                                        <option value='3'>Option 4</option>
+                                    </select></td>
+                                </tr>
+
+                                <tr>
+                                    <td></td>
+                                    <td>
+                                    {
+                                        addOrUpdate === 'add' &&
+                                        <button
+                                            className="btn btn-primary"
+                                        onClick={addQuestion}>Add Question</button>
+                                    }
+                                    {
+                                        addOrUpdate === 'update' &&
+                                        <button
+                                            className="btn btn-primary"
+                                        onClick={ updateQuestion }>Update Question</button>
+                                    }
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>                        
                     </div>
                 </div>
                 <div className="w-50">
@@ -187,7 +233,7 @@ function AddAssessment(props) {
                     }</div>
                 </div>
             </div>
-            
+            </div>
         </div>
     )
 }

@@ -21,6 +21,10 @@ import AddCourse from './components/AddCourse';
 import ViewAssessment from './components/ViewAssessment';
 import ViewCourse from './components/ViewCourse';
 import LearnerViewCourse from './components/LearnerViewCourse';
+import LearnerAllCourseList from './components/LearnerAllCourseList';
+import EditLearner from './components/EditLearner';
+import AttemptAssessment from './components/AttemptAssessment';
+import LearnerCertificateList from './components/LearnerCertificateList';
 
 function Tommy(props) {
   return (
@@ -28,14 +32,6 @@ function Tommy(props) {
       <h1>Brilliant Pro LMS</h1>
       <Link to='/signin'>Sign In</Link>
       <Link to='/signup'>Sign Up</Link>
-    </div>
-  )
-}
-
-function Jerry(props) {
-  return (
-    <div>
-      <h1>Brilliant Pro LMS Testing ...</h1>
     </div>
   )
 }
@@ -57,8 +53,11 @@ root.render(
 
 
       <Route path='/learner' element={<ProtectedRoute role='learner'/>} >
-        <Route path='/learner/:id' element={<LearnerHome/>} />
-        <Route path='/learner/:user_id/:course_id' element={<LearnerViewCourse/>} />
+        <Route path='/learner' element={<LearnerHome/>} />
+        <Route path='/learner/courses/:course_id' element={<LearnerViewCourse/>} />
+        <Route path='/learner/all-courses/' element={<LearnerAllCourseList/>} />
+        <Route path='/learner/attempt/:courseid/:assessmentid' element={<AttemptAssessment/>} />
+        <Route path='/learner/certificates/' element={<LearnerCertificateList/>} />
       </Route>
       
       <Route path='/admin' element={<ProtectedRoute role='admin'/>} >
@@ -68,6 +67,7 @@ root.render(
         <Route path='assessments' element={<Assessments/>} />
         <Route path='learners' element={<LearnersMgmt/>} />
         <Route path='/admin/learners/add' element={<AddLearner/>} />
+        <Route path='/admin/learners/edit/:userid' element={<EditLearner/>} />
         <Route exact path='/admin/assessments/add' element={<AddAssessment/>} />
         <Route path='/admin/assessments/:id' element={<ViewAssessment/>} />
         <Route path='/admin/courses/add' element={<AddCourse/>} />

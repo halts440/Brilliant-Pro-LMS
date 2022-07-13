@@ -10,23 +10,15 @@ const courseSchema = Schema({
         type: String,
         required: true
     },
+    status: {
+        type: String,
+        required: true
+    },
     overview: {
         type: String,
         required: true
     },
     image: {
-        type: String,
-        required: true
-    },
-    startDate: {
-        type: String,
-        required: true
-    },
-    endDate: {
-        type: String,
-        required: true
-    },
-    enrollmentLink: {
         type: String,
         required: true
     },

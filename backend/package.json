@@ -16,7 +16,9 @@
     "express": "^4.18.1",
     "express-fileupload": "^1.4.0",
     "jsonwebtoken": "^8.5.1",
+    "jspdf": "^2.5.1",
     "mongoose": "^6.3.4",
-    "nodemon": "^2.0.16"
+    "nodemon": "^2.0.16",
+    "randomstring": "^1.2.2"
   }
 }

@@ -13,6 +13,7 @@ function ViewCourse() {
     const [learnersList, setLearnersList] = useState([])
     const [enrolledLearners, setEnrolledLearners] = useState([])
     const [courseName, setCourseName] = useState('')
+    const [courseCode, setCourseCode] = useState('')
 
     useEffect( () => {
         fetch('http://localhost:4000/api/courses/'+myparam.id, {
@@ -26,6 +27,7 @@ function ViewCourse() {
                 if(data.status === 'success') {
                     setEnrolledLearners(data.course.learnersList)
                     setCourseName(data.course.courseName)
+                    setCourseCode(data.course.code);
                 }
             })
             .catch( (err) => {
@@ -37,8 +39,8 @@ function ViewCourse() {
     return (
         <div>
             <AdminNavigation />
-            <div className="w-50 my-centered-div">
-                <h3>{courseName}</h3>
+            <div className="w-50 my-centered-div pb-5">
+                <h3 className='cheader'>{courseCode} {courseName}</h3>
                 <Tabs defaultActiveKey="matandas" id="uncontrolled-tab-example" className="mb-3">
                     <Tab eventKey="matandas" title="Materials and Assessments">
                         <div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import AdminNavigation from "./AdminNavigation";
 
@@ -8,10 +8,10 @@ function AddCourse(props) {
     const [code, setCode] = useState('')
     const [courseName, setCourseName] = useState('')
     const [overview, setOverview] = useState('')
-    const [image, setImage] = useState('')
-    const [startDate, setStartDate] = useState('')
-    const [endDate, setEndDate] = useState('')
-    const [enrollmentLink, setEnrollmentLink] = useState('')
+    const [imageSrc, setImageSrc] = useState(process.env.PUBLIC_URL + '/images/default_profile.jpg');
+    const [image, setImage] = useState('');
+    const [imageType, setImageType] = useState('default');
+    const profileUploadRef = useRef(null);
 
     function handleChange(event) {
         const value = event.target.value;
@@ -22,38 +22,27 @@ function AddCourse(props) {
             setCourseName(value)
         else if( name === 'overview')
             setOverview(value)
-        else if( name === 'image')
-            setImage(value)
-        else if( name === 'startDate')
-            setStartDate(value)
-        else if( name === 'endDate')
-            setEndDate(value)
-        else if( name === 'enrollmentLink')
-            setEnrollmentLink(value)
+        else if( name === 'image') {
+            setImage(event.target.files[0])
+            if(imageType === 'default')
+                setImageType('changed')
+            setImageSrc( URL.createObjectURL( event.target.files[0] ) );
+        }
     }
 
     function handleSubmit(event) {
         event.preventDefault();
-        if(image === '')
-            setImage('default')
-        const data = {
-            'code': code,
-            'courseName': courseName,
-            'overview' : overview,
-            'image': image,
-            'startDate': startDate,
-            'endDate': endDate,
-            'enrollmentLink' : enrollmentLink,
-            'learnersList': [],
-            'assessmentsList': [],
-            'materialsList': []
-        }
+        const formData = new FormData();
+        formData.append('code', code);
+        formData.append('courseName', courseName);
+        formData.append('overview', overview );
+        formData.append('status', 'new');
+        formData.append('image', image);
+        formData.append('imageType', imageType);
+
         fetch('http://localhost:4000/api/courses/add', {
             method: 'POST',
-            headers: {
-            'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(data),
+            body: formData,
             })
             .then(response => response.json() )
             .then(data => {
@@ -64,56 +53,63 @@ function AddCourse(props) {
             });
     }
 
+    function openFileDialog() {
+        profileUploadRef.current.click();
+    }
+
 
     return (
         <div>
             <AdminNavigation />
-            <h1>Add Course</h1>
+            <div class="w-50 m-auto d-block pb-5">
+            <h1 className="cheader">Add Course</h1>
             <table>
                 <tbody>
                 <tr>
-                    <td><label>Code</label></td>
+                    <td><label>Code:</label></td>
                     <td><input type='text' name='code' value={code} onChange={handleChange}/></td>
                 </tr>
+                <br/>
 
                 <tr>
-                    <td><label>Name</label></td>
+                    <td><label>Name:</label></td>
                     <td><input type='text' name='courseName' value={courseName} onChange={handleChange}/></td>
                 </tr>
+                <br/>
                 
                 <tr>
-                    <td><label>Overview</label></td>
+                    <td><label>Overview:</label></td>
                     <td><textarea name='overview' value={overview} onChange={handleChange}/></td>
                 </tr>
+                <br/>
 
                 <tr>
-                    <td><label>Image</label></td>
-                    <td><img src={image} alt='ProfilePicture' /></td>
+                    <td><label>Image:</label></td>
+                    <td><img className="course-image-upload" src={imageSrc} alt='ProfilePicture' /></td>
                 </tr>
+                <br/>
 
                 <tr>
-                    <td><label>Start Date</label></td>
-                    <td><input type='date' name='startDate' value={startDate} onChange={handleChange}/></td>
+                    <td><input type='file' name='image' hidden ref={profileUploadRef} onChange={handleChange}/></td>
+                    <td><input
+                    className="btn btn-primary"
+                    type='button' value='Upload Image' onClick={openFileDialog}/></td>
                 </tr>
+                <br/>
 
                 <tr>
-                    <td><label>End Date</label></td>
-                    <td><input type='date' name='endDate' value={endDate} onChange={handleChange}/></td>
-                </tr>
-
-                <tr>
-                    <td><label>Enrollment Link</label></td>
-                    <td><input type='text' name='enrollmentLink' value={enrollmentLink} onChange={handleChange}/></td>
-                </tr>
-                <tr>
-                    <td><input type='submit' value='Add Course' onClick={handleSubmit}></input></td>
                     <td></td>
+                    <td><input
+                        className="btn btn-primary"
+                    type='submit' value='Add Course' onClick={handleSubmit}></input></td>
                 </tr>
 
                 
                 </tbody>
             </table>
+            </div>
         </div>
+
     );
 };
 

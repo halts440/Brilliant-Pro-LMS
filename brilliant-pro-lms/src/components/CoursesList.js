@@ -36,14 +36,13 @@ function CoursesList() {
                     courses.map( (elem, index) => (
                         <div key={index} className="col-sm-4">
                             <Card style={{ width: '18rem' }}>
-                                <Card.Img variant="top" src="holder.js/100px180" />
+                                <Card.Img variant="top" className="square-img" src={'http://localhost:4000/ci/'+elem.image} />
                                 <Card.Body>
                                     <Card.Title>{elem.courseName}</Card.Title>
-                                    <button variant="primary" onClick={
-                                        () => {
-                                            navigate('/admin/courses/'+elem._id)   
-                                        }
-                                    }>View</button>
+                                    <button variant="primary"
+                                        className="btn btn-primary"
+                                        onClick={ () => { navigate('/admin/courses/'+elem._id) } }
+                                    >View</button>
                                 </Card.Body>
                             </Card>
                         </div>

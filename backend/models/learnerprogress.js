@@ -14,6 +14,9 @@ const learnerProgressSchema = Schema({
         type: String,
         required: true
     },
+    certificate: {
+        type: String,
+    },
     materials: {
         type: []
     },
