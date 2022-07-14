@@ -83,7 +83,8 @@ function AttemptAssessment(props) {
     }
     
     return (<div>
-        <h1>{name}</h1>
+        <h1 className="text-center">{name}</h1>
+        <div className="w-75 pb-5 m-auto d-block">
         <p>Duration: {duration}</p>
         <p>Minimum Passing Percentage: {minPassing}%</p>
         {
@@ -195,7 +196,7 @@ function AttemptAssessment(props) {
                 >Go Back</button>
             </div>
         }
-        
+        </div>
     </div>)
 }
 

@@ -194,7 +194,12 @@ app.route('/api/learner-courses-list/:id').get( (req, res) => {
                       'percentage': done/total
                     }
                   }
-                  else return
+                  else {
+                    return res.json({
+                      'status': 'fail',
+                      'message': 'Some issue occured',
+                    })
+                  }
                 }
               )
               if(!final_output) final_output = []
@@ -764,19 +769,55 @@ app.route('/api/assessments/update/:id').put( (req, res) => {
   })
 })
 
+
+// delete assessment with specified id
 app.route('/api/assessments/delete/:id').delete( (req, res) => {
-  // check where this assessment is being used
-  Assessment.findByIdAndDelete(req.params.id, (err, data) => {
-    if(err)
-      return res.json({
-        status: 'fail',
-        message: 'Failed to delete assessment'
+  const assessmentId = req.params.id;
+  Course.find({})
+  .then(data => {
+    // if there are no courses in database, just delete the assessment
+    if(data === null) {
+      Assessment.findByIdAndDelete(assessmentId)
+      .then(data => {
+        return res.json({
+          status: 'success',
+          message: 'Assessment deleted'
+        })
       })
-    else
-      return res.json({
-        status: 'success',
-        message: 'Assessment deleted'
+    }
+    else {
+      // check if some course is using this assessment or not
+      already_used = false
+      data.forEach( (elem) => {
+        aList = elem.assessmentsList;
+        if(aList.includes(assessmentId))
+          already_used = true;
       })
+      // incase some course is using this assessment donot delete it
+      if(already_used) {
+        return res.json({
+          status: 'fail',
+          message: 'Failed to delete assessment'
+        })
+      }
+      // if no course is using this assessment delete it
+      else {
+        Assessment.findByIdAndDelete(assessmentId)
+        .then(data => {
+          return res.json({
+            status: 'success',
+            message: 'Assessment deleted'
+          })
+        })
+      }
+    }
+  })
+  // handle errors
+  .catch( error => {
+    return res.json({
+      status: 'fail',
+      message: 'Failed to delete assessment'
+    })
   })
 })
 
@@ -1014,11 +1055,8 @@ app.route('/api/courses/addCourseAssessment').post( (req, res) => {
       })
     }
     else {
-      console.log("HE: ", data)
-      console.log("Old: ", data.assessmentList)
       const myAssessmentList = data.assessmentsList
       myAssessmentList.push(assessmentId)
-      console.log("New: ", myAssessmentList)
       Course.findByIdAndUpdate(courseId, {
         'assessmentsList': myAssessmentList
       },
@@ -1112,7 +1150,6 @@ app.route('/api/courses/addCourseMaterial').post( (req, res) => {
 app.route('/api/courses/removeCourseMaterial').post( (req, res) => {
   const courseId = req.body.course
   const materialId = req.body.material
-  console.log("I ma hete")
   Course.findById(courseId, (err, data) => {
     if(err) {
       return res.json({
@@ -1179,7 +1216,6 @@ app.route('/api/assessments/user-attempt').post( (req, res) => {
       num_correct_answers += 1
   }
   percentage = (num_correct_answers / questions.length) * 100;
-  console.log(num_correct_answers, questions.total, percentage);
   percentage >= min_passing ? passing_status = 'pass': passing_status = 'fail';
 
   // check how many attempts user has already tried to pass this assessment
@@ -1205,7 +1241,6 @@ app.route('/api/assessments/user-attempt').post( (req, res) => {
         data = data['assessments'];
 
         for(var i=0; i<data.length; i++) {
-          console.log(data[i]['assessment_id'], assessmentId)
           if(data[i]['assessment_id'] === assessmentId) {
             attempt_number += data[i].attempt;
             break;
@@ -1221,7 +1256,6 @@ app.route('/api/assessments/user-attempt').post( (req, res) => {
         }
         else {
           attempt_number += 1;
-          console.log(attempt_number)
           LearnerProgress.findOneAndUpdate()
           LearnerProgress.findOneAndUpdate({
             'userId': learnerId,
@@ -1310,8 +1344,6 @@ function updateLearnerProgress(courseId, learnerId) {
             new_status = 'unfinished'
             if(progress === 100)
               new_status = 'finished'
-            
-            console.log(new_status, progress);
 
             // get user name
             Learner.findOne({
@@ -1365,7 +1397,6 @@ function updateLearnerProgress(courseId, learnerId) {
 
 app.route('/api/materials/d/').post( (req, res) => {
   var dirname = './public/' + req.body.dirname
-  console.log(dirname)
   var data = []
   var status = 'success'
   try {
@@ -1455,64 +1486,127 @@ app.route('/api/materials/delete').delete( (req, res) => {
   if( fpath.endsWith('.pdf') || fpath.endsWith('.pptx') || fpath.endsWith('.ppt') || fpath.endsWith('.mp4') ) {
     // is a file
     // seperate the filename and directory path
-    console.log(fpath)
     const fname = fpath.substr( fpath.lastIndexOf('/')+1, fpath.length )
     const dirname = fpath.substr(0, fpath.lastIndexOf('/') )
-    console.log("Folder Name: ", dirname)
-    console.log("File Name: ", fname)
-    // find the file in materials collection
-    Material.findOneAndRemove({'filename': fname, 'path': dirname}, (err, data) => {
-      if(err) {
-        return res.json({
-          status: 'fail',
-          message: 'some issue occured on server side'
+
+    // check if the file is already being used in some course
+    Course.find({})
+    .then( data => {
+      // there are not courses in database, so we can delete this material
+      if(data === null) {
+        // find the file in materials collection
+        Material.findOneAndRemove({'filename': fname, 'path': dirname})
+        .then( data => {
+            fs.unlinkSync('./public/'+fpath)
+            return res.json({
+              status: 'success',
+              message: 'Deleted the file'
+            })
         })
-      }
-      else {
-        // remove from actual directory
-        try{
-          fs.unlinkSync('./public/'+fpath)
-          return res.json({
-            status: 'success',
-            message: 'Deleted the file'
-          })
-        }
-        catch {
+        .catch( error => {
           return res.json({
             status: 'fail',
-            message: 'Failed to delete the file'
+            message: 'some issue occured on server side'
           })
-        }
-      }
-    })
-  }
-  else {
-    // is a folder
-    console.log("Just Folder: ", fpath)
-    Material.find({path: {$regex: '/^'+fpath+'/'} }, (err, data) => {
-      if(err) {
-        return res.json({
-          status: 'fail',
-          message: 'Some issue occured on server side'
         })
       }
       else {
-        // remove from courses
-        // remove all files and folders in this directory recurrsively
-        try {
-            fs.rmdirSync('./public/'+fpath, { recursive: true });
+        // check if any course is using this material
+        mList = data.materialsList;
+        already_used = false;
+        mList.forEach( elem => {
+          if(elem.contains(materialId))
+            already_used = true;
+        })
+
+        // material is being used in some course
+        if(already_used) {
+          return res.json({
+            status: 'fail',
+            message: 'Cannot delete this course material. It is being used in some course'
+          })
+        } 
+        
+        // material is not used in any course
+        else {
+          // find the file in materials collection
+          Material.findOneAndRemove({'filename': fname, 'path': dirname})
+          .then( data => {
+              fs.unlinkSync('./public/'+fpath)
+              return res.json({
+                status: 'success',
+                message: 'Deleted the file'
+              })
+          })
+          .catch( error => {
+            return res.json({
+              status: 'fail',
+              message: 'some issue occured on server side'
+            })
+          })
+        }
+
+      }
+    })
+    .catch( error => {
+      return res.json({
+        status: 'fail',
+        message: 'some issue occured on server side'
+      })
+    })
+  }
+
+  else {
+    // you want to delete a folder
+    Material.find({path: {$regex: '/^'+fpath+'/'} })
+    .then( data => {
+      // we have list of materials which are descendant of this folder
+      mList = data;
+
+      // now check if these material ids are being used in any other courses
+      already_used = false;
+      Course.find({})
+      .then( data => {
+        if( mList !== null ) {
+          cList = data;
+          cList.forEach( elem => {
+            course_mList = elem.materialsList;
+            mList.forEach(elem2 => {
+              if( course_mList.includes( elem2._id.toString() ))
+                already_used = true;
+            })
+          })
+        }
+        
+        // if the folder contains any materials that are being used in a course, do not delete the folder
+        if(already_used) {
+          return res.json({
+            status: 'fail',
+            message: 'This folder contains materials that are used in some courses'
+          })
+        }
+
+        else {
+          // delete the folder and its materials from directory
+          fs.rmdirSync('./public/'+fpath, { recursive: true });
+
+          // delete these materaisl from database as well
+          Material.deleteMany({path: {$regex: '/^'+fpath+'/'} })
+          .then( data => {
             return res.json({
               status: 'success',
               message: 'Deleted the folder'
             })
-        }
-        catch (err) {
-          return res.json({
-            status: 'fail',
-            message: 'Failed to remove folder' + err
           })
         }
-      }
+      })
+    })
+    // handle error
+    .catch( error => {
+      return res.json({
+        status: 'fail',
+        message: 'Some issue occured on server side'
+      })
     })
   }
 })
@@ -1526,8 +1620,6 @@ app.route('/api/materials/edit').put( (req, res) => {
     // seperate the filename and directory path
     const fname = oldname.substr( oldname.lastIndexOf('/')+1, oldname.length )
     const dirname = oldname.substr(0, oldname.lastIndexOf('/') )
-    console.log("Folder Name: ", dirname)
-    console.log("File Name: ", fname)
     // find the file in materials collection
     Material.findOne({'filename': fname, 'path': dirname}, (err, data) => {
       if(err) {
@@ -1549,8 +1641,6 @@ app.route('/api/materials/edit').put( (req, res) => {
 
         // rename in actual directory
         try{
-          console.log("K: ./public/"+oldname)
-          console.log("K: ./public/"+newname)
           fs.renameSync('./public/'+oldname, './public/'+dirname+'/'+newname)
           return res.json({
             status: 'success',
@@ -1568,7 +1658,6 @@ app.route('/api/materials/edit').put( (req, res) => {
   }
   else {
     // is a folder
-    console.log("Just Folder: ", oldname)
     var dirname = oldname.substr(0, oldname.lastIndexOf('/') ) + '/' + newname 
     Material.updateMany({path: {$regex: '/^'+oldname+'/'}}, {path: dirname}, (err, data) => {
       if(err) {
@@ -1579,8 +1668,6 @@ app.route('/api/materials/edit').put( (req, res) => {
       }
       else {
         try {
-          console.log('Last Old: ./public/'+oldname)
-          console.log('Last New: ./public/'+dirname )
             fs.renameSync('./public/'+oldname, './public/'+dirname);
             return res.json({
               status: 'success',
@@ -1624,7 +1711,6 @@ app.route('/api/learner/courses/all').get( (req, res) => {
 
 // get list of courses in which user enrolled
 app.route('/api/learner/courses/enrolled/:userid').get( (req, res) => {
-  console.log(req.params.userid);
   Course.find({
     learnersList: req.params.userid
   },
