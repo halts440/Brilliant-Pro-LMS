@@ -20,3 +20,14 @@ Learner:
 - View enrolled courses. Unenroll from a course.
 - View course materials and attempt assessments.
 - View certificates for completed courses.
+
+![All courses](Images/All%20Courses.PNG)
+<br><br>
+
+![Add assessment](Images/Add%20Assessment.PNG)
+<br><br>
+
+![All courses](Images/All%20Materials.PNG)
+<br><br>
+
+![All courses](Images/Learners.PNG)
