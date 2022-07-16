@@ -99,6 +99,28 @@ function LearnerViewCourse(props) {
         })
     }
 
+    function unenrollLearner() {
+        fetch('http://localhost:4000/api/courses/unenroll', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                'course': courseId,
+                'learner': learnerId,
+            }),
+        })
+        .then(response => response.json() )
+        .then(data => {
+            console.log(data);
+            if(data.status === 'success') {
+                getData();
+            }
+        })
+        .catch( (err) => {
+            console.log("Some issue occured while marking material as viewed", err);
+        })
+    }
+
     return (
         <div className='pb-5'>
             <LearnerNavigation></LearnerNavigation>
@@ -107,6 +129,10 @@ function LearnerViewCourse(props) {
             {   enrollmentStatus === 'enrolled' && 
                 <button
                     className="btn btn-primary m-3"
+                    onClick={ () => {
+                        enrollLearner()
+    
+                    }}
                 >Unenroll</button>
             }
             {   enrollmentStatus !== 'enrolled' && 

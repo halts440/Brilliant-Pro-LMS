@@ -36,7 +36,7 @@ function AddCourse(props) {
         formData.append('code', code);
         formData.append('courseName', courseName);
         formData.append('overview', overview );
-        formData.append('status', 'new');
+        formData.append('status', 'active');
         formData.append('image', image);
         formData.append('imageType', imageType);
 

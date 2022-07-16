@@ -84,7 +84,8 @@ app.route("/api/register").post( (req, res) => {
             email: userData.email,
             password: userData.password,
             image: userData.image,
-            courses: []
+            courses: [],
+            account_status: 'active'
           });
 
           newLearner.save((err, data) => {
@@ -279,7 +280,7 @@ app.route("/login").post( (req, res, next) => {
   const userLoggingIn = req.body;
   
   // Learner
-  Learner.findOne({email: userLoggingIn.email})
+  Learner.findOne({email: userLoggingIn.email, 'account_status':'active'})
   .then( dbUser => {
     if( dbUser ) {
       bcrypt.compare(userLoggingIn.password, dbUser.password)
@@ -622,17 +623,42 @@ app.route('/api/learners/edit/:userid').put( (req, res) => {
   });
 })
 
-app.route('/api/learners/delete/:id').delete( (req, res) => {
-  Learner.findOneAndDelete({_id: req.params.id}, (err, data)=> {
-    if(err) 
+app.route('/api/learners/disable/:id').put( (req, res) => {
+  const learnerId = req.params.id;
+  Learner.findByIdAndUpdate({
+    '_id': learnerId
+  }, {
+    'account_status': 'disable'
+  }, (error, data) => {
+    if(error)
       return res.json({
-        status: 'fail',
-        message: 'Issue occured while deleting'
+        'status': 'fail',
+        'message': 'Cannot deactivate this account '+error
       })
     else
       return res.json({
-        status: 'success',
-        message: 'Deleted learner'
+        'status': 'success',
+        'message': 'Account disabled'
+      })
+  })
+});
+
+app.route('/api/learners/activate/:id').put( (req, res) => {
+  const learnerId = req.params.id;
+  Learner.findByIdAndUpdate({
+    '_id': learnerId
+  }, {
+    'account_status': 'active'
+  }, (error, data) => {
+    if(error)
+      return res.json({
+        'status': 'fail',
+        'message': 'Cannot activate this account'
+      })
+    else
+      return res.json({
+        'status': 'success',
+        'message': 'Account activated'
       })
   })
 });

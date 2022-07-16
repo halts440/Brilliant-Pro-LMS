@@ -27,9 +27,29 @@ function LearnersList(props) {
         getAllLearnersData()
     }, [])
 
-    function deleteLearner(user_id) {
-        fetch('http://localhost:4000/api/learners/delete/'+user_id, {
-            method: 'DELETE',
+    function disableLearner(user_id) {
+        fetch('http://localhost:4000/api/learners/disable/'+user_id, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json' },
+            })
+            .then(response => response.json() )
+            .then(data => {
+                console.log('data', data)
+                if(data.status === 'success') {
+                    getAllLearnersData()
+                    alert('Learner disabled')
+                }
+            })
+            .catch( (err) => {
+                console.log("An error occured", err);
+                alert('Some issue occured while disabling learner')
+            })
+    }
+
+    function activateLearner(user_id) {
+        fetch('http://localhost:4000/api/learners/activate/'+user_id, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json' },
             })
@@ -37,10 +57,12 @@ function LearnersList(props) {
             .then(data => {
                 if(data.status === 'success') {
                     getAllLearnersData()
+                    alert('Learner account activated')
                 }
             })
             .catch( (err) => {
                 console.log("An error occured", err);
+                alert('Some issue occured while activating learner account')
             })
     }
 
@@ -67,7 +89,20 @@ function LearnersList(props) {
                                 <td>{elem.email}</td>
                                 <td><PencilSquare color='green' size={25} onClick={() => 
                                     navigate('/admin/learners/edit/'+elem._id) } /></td>
-                                <td><Trash color='red' size={25} onClick={() => deleteLearner(elem._id) } /></td>
+                                {
+                                    elem.account_status === 'active' && 
+                                    <td><button className='btn btn-danger'
+                                        onClick={() => disableLearner(elem._id) }
+                                    >Disbale</button></td>
+                                }
+
+                                {
+                                    elem.account_status !== 'active' && 
+                                    <td><button className='btn btn-success'
+                                        onClick={() => activateLearner(elem._id) }
+                                    >Active</button></td>
+                                }
+                                
                             </tr>
                         ) )}
                     </tbody>

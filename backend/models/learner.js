@@ -20,6 +20,10 @@ const learnerSchema = Schema({
     },
     courses: {
         type: Array
+    },
+    account_status: {
+        type: String,
+        required: true
     }
 }, {
     timestamps: true

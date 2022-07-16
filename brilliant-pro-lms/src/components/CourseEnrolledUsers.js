@@ -94,7 +94,8 @@ function CourseEnrolledUsers(props) {
                 learnersList && learnersList.length > 0 && (
                     <table>
                         <tbody>{
-                        learnersList.map( (elem, index) =>
+                        learnersList.map( (elem, index) => (
+                            elem.account_status === 'active' &&
                             <tr key={index}>
                                 <td>{elem.name}</td>
                                 <td>
@@ -114,6 +115,7 @@ function CourseEnrolledUsers(props) {
                                     }
                                 </td>
                             </tr>
+                        )
                         )}
                         </tbody>
                     </table>

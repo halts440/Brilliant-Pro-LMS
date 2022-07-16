@@ -107,13 +107,20 @@ function Materials() {
         })
         .then( response => response.json() )
         .then( data => {
-            if(data.status === 'success') 
+            if(data.status === 'success') {
                 getDirInfo(path)
-            else
+                alert('Deleted')
+            }
+            else {
                 console.log("Not Ok")
+                alert("Fail to delete")
+            }
         })
         .catch(
-            error => console.log(error)
+            error => {
+                console.log(error)
+                alert("Some issue occured while deleting")
+            }
         );
     }
 
@@ -135,9 +142,12 @@ function Materials() {
                     getDirInfo(path)
                 setNewDirName('')
                 setShow(false)
+                alert('Folder created')
             })
-            .catch(
-                error => console.log(error)
+            .catch( error => {
+                console.log(error)
+                alert('Cannot create folder')
+                }
             );
         }
     }

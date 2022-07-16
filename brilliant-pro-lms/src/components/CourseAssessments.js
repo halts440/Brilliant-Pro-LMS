@@ -90,8 +90,6 @@ function CourseAssessments(props) {
 
     return (
         <div>
-            <p>{props.id}</p>
-            <p>ERRR: {addedAssessments.includes('abc')}</p>
             {
                 assessmentsList && assessmentsList.length > 0 && (
                     <table>

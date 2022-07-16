@@ -109,7 +109,6 @@ function UpdateCourseSettings (props) {
                     <td><label>Status:</label></td>
                     <td>
                         <select name='status' value={status} onChange={handleChange}>
-                            <option value='new'>New</option>
                             <option value='active'>Active</option>
                             <option value='inactive'>Inactive</option>
                         </select>
